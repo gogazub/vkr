@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: validation_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: validation_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - validation_network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: validation_api
+    environment:
+      - ENV_MODE=DEV
+      - DEBUG=True
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/validation_db
+      - DATA_PATH=/app/data
+      - MODELS_PATH=/app/models
+      - HOST=0.0.0.0
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - validation_network
+
+volumes:
+  postgres_data:
+
+networks:
+  validation_network:
+    driver: bridge
