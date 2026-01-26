@@ -44,11 +44,7 @@ microservice/
 │   ├── __init__.py
 │   ├── main.py              # FastAPI приложение
 │   ├── config.py            # Конфигурация
-│   ├── data/                # Data Access Layer
-│   ├── api/                 # API endpoints
-│   ├── services/            # Бизнес-логика
-│   ├── core/                # Ядро (ONNX, метрики)
-│   └── utils/               # Утилиты
+│   └── utils/               # Утилиты и исключения
 ├── tests/                   # Тесты
 ├── data/                    # Тестовые данные (не в git)
 │   ├── images/
