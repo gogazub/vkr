@@ -27,46 +27,46 @@ help:
 
 # Docker commands
 build:
-	docker-compose build
+	docker compose build
 
 up:
-	docker-compose up
+	docker compose up
 
 up-d:
-	docker-compose up -d
+	docker compose up -d
 
 down:
-	docker-compose down
+	docker compose down
 
 restart: down up-d
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-api:
-	docker-compose logs -f api
+	docker compose logs -f api
 
 logs-db:
-	docker-compose logs -f postgres
+	docker compose logs -f postgres
 
 # Testing commands (only in Docker)
 test:
-	docker-compose exec api pytest
+	docker compose exec api pytest
 
 test-cov:
-	docker-compose exec api pytest --cov=app --cov-report=term-missing --cov-report=html
+	docker compose exec api pytest --cov=app --cov-report=term-missing --cov-report=html
 
 # Utility commands
 clean:
-	docker-compose down -v
+	docker compose down -v
 	docker system prune -f
 	@echo "Cleanup complete!"
 
 shell:
-	docker-compose exec api /bin/bash
+	docker compose exec api /bin/bash
 
 db-shell:
-	docker-compose exec postgres psql -U postgres -d validation_db
+	docker compose exec postgres psql -U postgres -d validation_db
 
 health:
 	@echo "Checking service health..."
