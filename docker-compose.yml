@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: validation_db
     ports:
-      - "5432:5432"
+      - "5431:5431"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -26,7 +26,7 @@ services:
     environment:
       - ENV_MODE=DEV
       - DEBUG=True
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/validation_db
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5431/validation_db
       - DATA_PATH=/app/data
       - MODELS_PATH=/app/models
       - HOST=0.0.0.0
@@ -46,7 +46,5 @@ services:
       retries: 3
       start_period: 40s
 
-
 volumes:
   postgres_data:
-
