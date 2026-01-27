@@ -1,15 +1,15 @@
 :root {
-  color-scheme: light;
-  --bg: #f6f1ea;
-  --bg-alt: #efe6db;
-  --ink: #1c1b1a;
-  --muted: #5c5b58;
-  --accent: #0f7c8d;
-  --accent-2: #f28f3b;
-  --accent-3: #d94862;
-  --card: #ffffff;
-  --line: rgba(28, 27, 26, 0.12);
-  --shadow: 0 16px 40px rgba(18, 24, 30, 0.12);
+  color-scheme: dark;
+  --bg: #0d1116;
+  --bg-alt: #141a21;
+  --ink: #e6e8ea;
+  --muted: #9aa5ae;
+  --accent: #4dd0e1;
+  --accent-2: #f2a65a;
+  --accent-3: #ff5a7a;
+  --card: #161d25;
+  --line: rgba(230, 232, 234, 0.14);
+  --shadow: 0 20px 44px rgba(0, 0, 0, 0.45);
   --radius-lg: 28px;
   --radius-md: 18px;
   --radius-sm: 12px;
@@ -26,7 +26,7 @@
 body {
   font-family: var(--mono);
   color: var(--ink);
-  background: radial-gradient(1200px circle at 15% 5%, #ffffff 0%, var(--bg) 45%, #eadfd2 100%);
+  background: radial-gradient(900px circle at 20% 10%, rgba(77, 208, 225, 0.12) 0%, var(--bg) 48%, #070a0e 100%);
   min-height: 100vh;
 }
 
@@ -34,9 +34,9 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background-image: linear-gradient(90deg, rgba(28, 27, 26, 0.04) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(28, 27, 26, 0.04) 1px, transparent 1px);
-  background-size: 120px 120px;
+  background-image: linear-gradient(90deg, rgba(230, 232, 234, 0.06) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(230, 232, 234, 0.06) 1px, transparent 1px);
+  background-size: 140px 140px;
   pointer-events: none;
   z-index: -1;
 }
@@ -84,7 +84,7 @@ h1 {
 }
 
 .hero-card {
-  background: linear-gradient(150deg, #fefcf9 0%, #f3e7d8 100%);
+  background: linear-gradient(150deg, #1b242e 0%, #11171f 100%);
   border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: var(--shadow);
@@ -101,7 +101,7 @@ h1 {
   width: 160px;
   height: 160px;
   border-radius: 50%;
-  background: rgba(15, 124, 141, 0.12);
+  background: rgba(77, 208, 225, 0.18);
   top: -60px;
   right: -40px;
 }
@@ -128,7 +128,7 @@ h1 {
   align-self: flex-start;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(15, 124, 141, 0.12);
+  background: rgba(77, 208, 225, 0.18);
   color: var(--accent);
   font-size: 12px;
   letter-spacing: 0.12em;
@@ -141,12 +141,20 @@ h1 {
   gap: 24px;
 }
 
+.content-grid.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.content-grid.single .viewer {
+  grid-column: span 1;
+}
+
 .panel {
   background: var(--card);
   border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: var(--shadow);
-  border: 1px solid rgba(28, 27, 26, 0.05);
+  border: 1px solid rgba(230, 232, 234, 0.08);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -176,7 +184,7 @@ h1 {
 .tag {
   padding: 6px 10px;
   border-radius: 999px;
-  background: var(--bg-alt);
+  background: rgba(230, 232, 234, 0.08);
   font-size: 12px;
   color: var(--muted);
 }
@@ -188,7 +196,7 @@ h1 {
 
 .case-row {
   border: 1px solid var(--line);
-  background: #fff;
+  background: rgba(22, 29, 37, 0.9);
   border-radius: var(--radius-md);
   padding: 14px 16px;
   display: flex;
@@ -200,12 +208,12 @@ h1 {
 
 .case-row:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 20px rgba(18, 24, 30, 0.08);
+  box-shadow: 0 16px 26px rgba(0, 0, 0, 0.35);
 }
 
 .case-row.is-active {
-  border-color: rgba(15, 124, 141, 0.5);
-  box-shadow: 0 16px 24px rgba(15, 124, 141, 0.18);
+  border-color: rgba(77, 208, 225, 0.6);
+  box-shadow: 0 18px 26px rgba(77, 208, 225, 0.18);
 }
 
 .case-id {
@@ -227,12 +235,12 @@ h1 {
 }
 
 .status.reviewed {
-  background: rgba(15, 124, 141, 0.12);
+  background: rgba(77, 208, 225, 0.18);
   color: var(--accent);
 }
 
 .status.pending {
-  background: rgba(242, 143, 59, 0.16);
+  background: rgba(242, 166, 90, 0.18);
   color: var(--accent-2);
 }
 
@@ -389,14 +397,15 @@ button {
 
 .primary-btn {
   background: var(--accent);
-  color: #fff;
+  color: #0b0f14;
   padding: 12px 18px;
   border-radius: 12px;
   font-weight: 600;
 }
 
 .secondary-btn {
-  background: rgba(28, 27, 26, 0.08);
+  background: rgba(230, 232, 234, 0.12);
+  color: var(--ink);
   padding: 10px 14px;
   border-radius: 10px;
   font-weight: 600;
@@ -405,13 +414,38 @@ button {
 .ghost-btn {
   background: transparent;
   border: 1px solid var(--line);
+  color: var(--ink);
   padding: 10px 14px;
   border-radius: 10px;
   font-weight: 600;
 }
 
+.is-wip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wip-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: rgba(230, 232, 234, 0.12);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  filter: saturate(0.7);
+  box-shadow: none;
+}
+
 button:focus-visible {
-  outline: 2px solid rgba(15, 124, 141, 0.5);
+  outline: 2px solid rgba(77, 208, 225, 0.5);
   outline-offset: 2px;
 }
 
