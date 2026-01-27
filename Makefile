@@ -1,4 +1,4 @@
-.PHONY: help build up down restart logs test test-cov clean shell db-shell health start
+.PHONY: help build up down restart logs test test-cov clean shell health start
 
 # Default target
 help:
@@ -6,13 +6,12 @@ help:
 	@echo ""
 	@echo "Docker Commands:"
 	@echo "  make build          - Build Docker images"
-	@echo "  make up              - Start all services (PostgreSQL + API)"
-	@echo "  make up-d           - Start all services in detached mode"
+	@echo "  make up              - Start API service"
+	@echo "  make up-d           - Start API service in detached mode"
 	@echo "  make down           - Stop all services"
 	@echo "  make restart        - Restart all services"
 	@echo "  make logs           - View logs from all services"
 	@echo "  make logs-api       - View API service logs"
-	@echo "  make logs-db        - View PostgreSQL logs"
 	@echo ""
 	@echo "Testing Commands:"
 	@echo "  make test           - Run tests in Docker container"
@@ -21,7 +20,6 @@ help:
 	@echo "Utility Commands:"
 	@echo "  make clean          - Clean up temporary files and containers"
 	@echo "  make shell          - Open shell in API container"
-	@echo "  make db-shell       - Open PostgreSQL shell"
 	@echo "  make health         - Check service health"
 	@echo "  make start          - Quick start (build and run)"
 
@@ -46,9 +44,6 @@ logs:
 logs-api:
 	docker compose logs -f api
 
-logs-db:
-	docker compose logs -f postgres
-
 # Testing commands (only in Docker)
 test:
 	docker compose exec api pytest
@@ -65,12 +60,17 @@ clean:
 shell:
 	docker compose exec api /bin/bash
 
-db-shell:
-	docker compose exec postgres psql -U postgres -d validation_db
-
 health:
 	@echo "Checking service health..."
-	@curl -s http://localhost:8000/health | python -m json.tool || echo "Service is not running. Start it with: make start"
+	@{ \
+		if command -v python3 >/dev/null 2>&1; then \
+			curl -s http://localhost:8000/health | python3 -m json.tool; \
+		elif command -v python >/dev/null 2>&1; then \
+			curl -s http://localhost:8000/health | python -m json.tool; \
+		else \
+			curl -s http://localhost:8000/health; \
+		fi; \
+	} || echo "Service is not running. Start it with: make start"
 
 # Quick start (build and run)
 start: build up-d
