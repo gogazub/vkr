@@ -1,5 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+const toOverlayBoxes = (boxes, prefix) =>
+  boxes.map((box, index) => {
+    const width = Number(box.width) * 100;
+    const height = Number(box.height) * 100;
+    const top = Number(box.y_center) * 100 - height / 2;
+    const left = Number(box.x_center) * 100 - width / 2;
+    return {
+      id: `${prefix}-${box.class_id}-${index}`,
+      top,
+      left,
+      width,
+      height
+    };
+  });
+
 export default function App() {
   const [showModel, setShowModel] = useState(true);
   const [showExpert, setShowExpert] = useState(true);
@@ -10,7 +25,9 @@ export default function App() {
     state: "loading",
     imageId: "",
     imageUrl: "",
-    boxes: [],
+    expertBoxes: [],
+    modelBoxes: [],
+    stats: null,
     message: ""
   });
   const [imageRect, setImageRect] = useState({
@@ -66,8 +83,11 @@ export default function App() {
         setViewerData((prev) => ({
           ...prev,
           state: "error",
+          imageId: "",
           imageUrl: "",
-          boxes: [],
+          expertBoxes: [],
+          modelBoxes: [],
+          stats: null,
           message: "Image id is required"
         }));
         return;
@@ -75,7 +95,7 @@ export default function App() {
       setViewerData((prev) => ({ ...prev, state: "loading", message: "" }));
       try {
         const response = await fetch(
-          `${baseUrl}/api/v1/viewer/${encodeURIComponent(trimmedId)}`
+          `${baseUrl}/api/v1/analysis/${encodeURIComponent(trimmedId)}`
         );
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -85,15 +105,20 @@ export default function App() {
           state: "ok",
           imageId: data.image_id,
           imageUrl: data.image_url,
-          boxes: Array.isArray(data.boxes) ? data.boxes : [],
+          expertBoxes: Array.isArray(data.expert_boxes) ? data.expert_boxes : [],
+          modelBoxes: Array.isArray(data.model_boxes) ? data.model_boxes : [],
+          stats: data.stats ?? null,
           message: ""
         });
       } catch (error) {
         setViewerData((prev) => ({
           ...prev,
           state: "error",
+          imageId: trimmedId,
           imageUrl: "",
-          boxes: [],
+          expertBoxes: [],
+          modelBoxes: [],
+          stats: null,
           message: error?.message ?? "Network error"
         }));
       }
@@ -114,24 +139,14 @@ export default function App() {
   const displayedImageId = viewerData.imageId || activeImageId;
 
   const expertBoxes = useMemo(
-    () =>
-      viewerData.boxes.map((box, index) => {
-        const width = Number(box.width) * 100;
-        const height = Number(box.height) * 100;
-        const top = Number(box.y_center) * 100 - height / 2;
-        const left = Number(box.x_center) * 100 - width / 2;
-        return {
-          id: `${box.class_id}-${index}`,
-          top,
-          left,
-          width,
-          height
-        };
-      }),
-    [viewerData.boxes]
+    () => toOverlayBoxes(viewerData.expertBoxes, "expert"),
+    [viewerData.expertBoxes]
   );
 
-  const modelBoxes = [];
+  const modelBoxes = useMemo(
+    () => toOverlayBoxes(viewerData.modelBoxes, "model"),
+    [viewerData.modelBoxes]
+  );
 
   const updateImageRect = useCallback(() => {
     const container = stageRef.current;

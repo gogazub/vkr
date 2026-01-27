@@ -3,7 +3,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from app.config import settings
+from app.infrastructure.model_runner import StubModelRunner
 from app.providers.local_fs import LocalFSAnnotationProvider, LocalFSImageProvider
+from app.services.model_worker import ModelWorker
 from app.utils.exceptions import AnnotationNotFoundError, ImageNotFoundError, InvalidFormatError
 
 
@@ -28,6 +30,8 @@ def create_app() -> FastAPI:
     
     image_provider = LocalFSImageProvider()
     annotation_provider = LocalFSAnnotationProvider()
+    model_runner = StubModelRunner()
+    model_worker = ModelWorker(image_provider, annotation_provider, model_runner)
 
     # Health check endpoint
     @app.get("/health", tags=["Health"])
@@ -94,6 +98,22 @@ def create_app() -> FastAPI:
             "image_id": image_id,
             "image_url": f"/api/v1/images/{image_id}/file",
             "boxes": boxes,
+        }
+
+    @app.get("/api/v1/analysis/{image_id}", tags=["Analysis"])
+    async def analyze_image(image_id: str):
+        """Return combined payload (image + expert + model + stats)"""
+        try:
+            result = model_worker.analyze(image_id)
+        except ImageNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except AnnotationNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except InvalidFormatError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {
+            **result,
+            "image_url": f"/api/v1/images/{image_id}/file",
         }
 
     return app
