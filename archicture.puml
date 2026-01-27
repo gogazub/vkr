@@ -1,0 +1,76 @@
+@startuml
+left to right direction
+title Validation Microservice - Компактная схема
+
+package "Frontend (React)" {
+  component "App" as app
+  component "ImageViewer" as viewer
+  component "Stats Table" as stats
+  component "Image Selector" as selector
+}
+
+package "API (FastAPI)" {
+  component "Endpoints" as api
+  component "Health, Images, Analysis" as endpoints
+}
+
+package "Domain" {
+  component "Comparison\nService" as service
+  component "Metrics\nCalculator" as metrics
+}
+
+package "Providers" {
+  interface "IImageProvider" as i_int
+  component "Local Image\nProvider" as img_prov
+  
+  interface "IAnnotation\nProvider" as a_int
+  component "Local Annotation\nProvider" as ann_prov
+}
+
+package "Inference" {
+  component "ONNX\nPredictor" as predictor
+  component "Model Loader" as loader
+}
+
+package "Data" {
+  folder "Images" as images
+  folder "Labels" as labels
+  file "Model" as model
+}
+
+' Связи frontend
+app --> viewer
+app --> stats
+app --> selector
+selector --> api : fetch
+
+' Связи API
+api --> service : process
+api --> img_prov : get image
+api --> ann_prov : get annotations
+
+' Связи domain
+service --> metrics : calculate
+service --> predictor : run
+
+' Связи providers
+img_prov ..|> i_int
+ann_prov ..|> a_int
+img_prov --> images : read
+ann_prov --> labels : read
+
+' Связи inference
+predictor --> loader : load
+loader --> model : load
+
+note right of service
+  IoU threshold = 0.5
+  TP/FP/FN classification
+end note
+
+note left of i_int
+  Repository pattern
+  for easy data source
+  replacement
+end note
+@enduml
