@@ -11,7 +11,15 @@ export default function App() {
     boxes: [],
     message: ""
   });
+  const [imageRect, setImageRect] = useState({
+    width: 0,
+    height: 0,
+    offsetX: 0,
+    offsetY: 0
+  });
   const controllerRef = useRef(null);
+  const stageRef = useRef(null);
+  const imageRef = useRef(null);
   const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
   const checkHealth = useCallback(async () => {
@@ -107,6 +115,58 @@ export default function App() {
 
   const modelBoxes = [];
 
+  const updateImageRect = useCallback(() => {
+    const container = stageRef.current;
+    const img = imageRef.current;
+    if (!container || !img || !img.naturalWidth || !img.naturalHeight) {
+      return;
+    }
+
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    if (!containerWidth || !containerHeight) {
+      return;
+    }
+
+    const imageRatio = img.naturalWidth / img.naturalHeight;
+    const containerRatio = containerWidth / containerHeight;
+
+    let width;
+    let height;
+    let offsetX;
+    let offsetY;
+
+    if (imageRatio > containerRatio) {
+      width = containerWidth;
+      height = containerWidth / imageRatio;
+      offsetX = 0;
+      offsetY = (containerHeight - height) / 2;
+    } else {
+      height = containerHeight;
+      width = containerHeight * imageRatio;
+      offsetY = 0;
+      offsetX = (containerWidth - width) / 2;
+    }
+
+    setImageRect({ width, height, offsetX, offsetY });
+  }, []);
+
+  useEffect(() => {
+    updateImageRect();
+    window.addEventListener("resize", updateImageRect);
+    return () => window.removeEventListener("resize", updateImageRect);
+  }, [updateImageRect, resolvedImageUrl]);
+
+  const overlayStyle = useMemo(() => {
+    if (!imageRect.width || !imageRect.height) return null;
+    return {
+      top: `${imageRect.offsetY}px`,
+      left: `${imageRect.offsetX}px`,
+      width: `${imageRect.width}px`,
+      height: `${imageRect.height}px`
+    };
+  }, [imageRect]);
+
   return (
     <div className="app-shell">
       <main className="content-grid">
@@ -154,12 +214,14 @@ export default function App() {
             </div>
           </div>
           <div className="viewer-stage">
-            <div className="stage-image">
+            <div className="stage-image" ref={stageRef}>
               {viewerData.state === "ok" && resolvedImageUrl ? (
                 <img
                   className="stage-img"
                   src={resolvedImageUrl}
                   alt={`Image ${viewerData.imageId}`}
+                  ref={imageRef}
+                  onLoad={updateImageRect}
                 />
               ) : (
                 <div className="stage-placeholder">
@@ -169,39 +231,39 @@ export default function App() {
                 </div>
               )}
               <div className="stage-label">{viewerData.imageId}</div>
+              {overlayStyle && showModel && (
+                <div className="overlay model" style={overlayStyle}>
+                  {modelBoxes.map((box) => (
+                    <span
+                      key={box.id}
+                      className="bbox"
+                      style={{
+                        top: `${box.top}%`,
+                        left: `${box.left}%`,
+                        width: `${box.width}%`,
+                        height: `${box.height}%`
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+              {overlayStyle && showExpert && (
+                <div className="overlay expert" style={overlayStyle}>
+                  {expertBoxes.map((box) => (
+                    <span
+                      key={box.id}
+                      className="bbox"
+                      style={{
+                        top: `${box.top}%`,
+                        left: `${box.left}%`,
+                        width: `${box.width}%`,
+                        height: `${box.height}%`
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-            {showModel && (
-              <div className="overlay model">
-                {modelBoxes.map((box) => (
-                  <span
-                    key={box.id}
-                    className="bbox"
-                    style={{
-                      top: `${box.top}%`,
-                      left: `${box.left}%`,
-                      width: `${box.width}%`,
-                      height: `${box.height}%`
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-            {showExpert && (
-              <div className="overlay expert">
-                {expertBoxes.map((box) => (
-                  <span
-                    key={box.id}
-                    className="bbox"
-                    style={{
-                      top: `${box.top}%`,
-                      left: `${box.left}%`,
-                      width: `${box.width}%`,
-                      height: `${box.height}%`
-                    }}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         </section>
       </main>
