@@ -46,10 +46,10 @@ logs-api:
 
 # Testing commands (only in Docker)
 test:
-	docker compose exec api pytest
+	docker compose run --rm --no-deps --build api pytest
 
 test-cov:
-	docker compose exec api pytest --cov=app --cov-report=term-missing --cov-report=html
+	docker compose run --rm --no-deps --build api pytest --cov=app --cov-report=term-missing --cov-report=html
 
 # Utility commands
 clean:

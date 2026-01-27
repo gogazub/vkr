@@ -13,8 +13,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копирование кода приложения
+# Копирование кода приложения и тестов
 COPY app/ ./app/
+COPY tests/ ./tests/
 
 # Создание директорий для данных
 RUN mkdir -p /app/data/images /app/data/labels /app/models

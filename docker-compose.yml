@@ -17,8 +17,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data
-      - ./models:/app/models
+      - ${HOST_DATA_PATH:-./data}:/app/data
+      - ${HOST_MODELS_PATH:-./models}:/app/models
 
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
