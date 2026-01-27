@@ -73,6 +73,25 @@ body {
   color: var(--muted);
 }
 
+.api-refresh {
+  background: transparent;
+  border: 1px solid rgba(230, 232, 234, 0.2);
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.api-refresh:hover {
+  border-color: rgba(230, 232, 234, 0.4);
+}
+
+.api-refresh:focus-visible {
+  outline: 2px solid rgba(77, 208, 225, 0.5);
+  outline-offset: 2px;
+}
+
 .api-status {
   display: inline-flex;
   align-items: center;

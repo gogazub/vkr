@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const modelBoxes = [
   { id: "m1", top: 16, left: 12, width: 22, height: 16 },
@@ -16,39 +16,43 @@ export default function App() {
   const [showModel, setShowModel] = useState(true);
   const [showExpert, setShowExpert] = useState(true);
   const [apiInfo, setApiInfo] = useState({ state: "loading" });
+  const controllerRef = useRef(null);
+  const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+  const checkHealth = useCallback(async () => {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    setApiInfo((prev) => (prev.state === "ok" ? prev : { state: "loading" }));
+
+    try {
+      const response = await fetch(`${baseUrl}/health`, { signal: controller.signal });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      setApiInfo({
+        state: "ok",
+        status: data.status ?? "ok",
+        service: data.service,
+        version: data.version
+      });
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      setApiInfo({ state: "error", message: error?.message ?? "Network error" });
+    }
+  }, [baseUrl]);
 
   useEffect(() => {
-    let isMounted = true;
-    const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-
-    const loadHealth = async () => {
-      try {
-        const response = await fetch(`${baseUrl}/health`);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const data = await response.json();
-        if (isMounted) {
-          setApiInfo({
-            state: "ok",
-            status: data.status ?? "ok",
-            service: data.service,
-            version: data.version
-          });
-        }
-      } catch (error) {
-        if (isMounted) {
-          setApiInfo({ state: "error", message: error?.message ?? "Network error" });
-        }
-      }
-    };
-
-    loadHealth();
+    checkHealth();
+    const intervalId = setInterval(checkHealth, 10000);
 
     return () => {
-      isMounted = false;
+      controllerRef.current?.abort();
+      clearInterval(intervalId);
     };
-  }, []);
+  }, [checkHealth]);
 
   return (
     <div className="app-shell">
@@ -75,6 +79,9 @@ export default function App() {
                     ? "offline"
                     : apiInfo.status}
               </span>
+              <button className="api-refresh" type="button" onClick={checkHealth}>
+                Refresh
+              </button>
               <label className="toggle">
                 <input
                   type="checkbox"
