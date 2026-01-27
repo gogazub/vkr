@@ -19,7 +19,8 @@ class LocalFSImageProvider(IImageProvider):
         images_folder = images_dir or settings.IMAGES_DIR
         self.images_path = base_path / images_folder
 
-    def get_image(self, image_id: str) -> bytes:
+    def get_image_path(self, image_id: str) -> Path:
+        """Resolve image path by id"""
         if not image_id:
             raise InvalidFormatError("image_id is required")
 
@@ -28,9 +29,12 @@ class LocalFSImageProvider(IImageProvider):
 
         for image_path in sorted(self.images_path.glob(f"{image_id}.*")):
             if image_path.is_file():
-                return image_path.read_bytes()
+                return image_path
 
         raise ImageNotFoundError(f"Image '{image_id}' not found")
+
+    def get_image(self, image_id: str) -> bytes:
+        return self.get_image_path(image_id).read_bytes()
 
 
 class LocalFSAnnotationProvider(IAnnotationProvider):

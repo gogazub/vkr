@@ -1,7 +1,10 @@
 """FastAPI application entry point"""
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from app.config import settings
+from app.providers.local_fs import LocalFSAnnotationProvider, LocalFSImageProvider
+from app.utils.exceptions import AnnotationNotFoundError, ImageNotFoundError, InvalidFormatError
 
 
 def create_app() -> FastAPI:
@@ -23,6 +26,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
+    image_provider = LocalFSImageProvider()
+    annotation_provider = LocalFSAnnotationProvider()
+
     # Health check endpoint
     @app.get("/health", tags=["Health"])
     async def health_check():
@@ -44,7 +50,52 @@ def create_app() -> FastAPI:
             "environment": settings.ENV_MODE,
             "debug": settings.DEBUG,
         }
-    
+
+    @app.get("/api/v1/images/{image_id}/file", tags=["Images"])
+    async def get_image_file(image_id: str):
+        """Return raw image file by id"""
+        try:
+            image_path = image_provider.get_image_path(image_id)
+        except ImageNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except InvalidFormatError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return FileResponse(image_path)
+
+    @app.get("/api/v1/images/{image_id}/annotations", tags=["Images"])
+    async def get_image_annotations(image_id: str):
+        """Return annotations for image id"""
+        try:
+            boxes = annotation_provider.get_annotations(image_id)
+        except AnnotationNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except InvalidFormatError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"image_id": image_id, "boxes": boxes}
+
+    @app.get("/api/v1/viewer/{image_id}", tags=["Viewer"])
+    async def get_viewer_payload(image_id: str):
+        """Return viewer payload (image url + annotations)"""
+        try:
+            image_provider.get_image_path(image_id)
+        except ImageNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except InvalidFormatError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        try:
+            boxes = annotation_provider.get_annotations(image_id)
+        except AnnotationNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except InvalidFormatError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        return {
+            "image_id": image_id,
+            "image_url": f"/api/v1/images/{image_id}/file",
+            "boxes": boxes,
+        }
+
     return app
 
 
