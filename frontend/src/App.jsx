@@ -4,9 +4,11 @@ export default function App() {
   const [showModel, setShowModel] = useState(true);
   const [showExpert, setShowExpert] = useState(true);
   const [apiInfo, setApiInfo] = useState({ state: "loading" });
+  const [imageIdInput, setImageIdInput] = useState("sample-001");
+  const [activeImageId, setActiveImageId] = useState("sample-001");
   const [viewerData, setViewerData] = useState({
     state: "loading",
-    imageId: "sample-001",
+    imageId: "",
     imageUrl: "",
     boxes: [],
     message: ""
@@ -57,43 +59,59 @@ export default function App() {
     };
   }, [checkHealth]);
 
-  const loadViewer = useCallback(async () => {
-    setViewerData((prev) => ({ ...prev, state: "loading", message: "" }));
-    try {
-      const response = await fetch(
-        `${baseUrl}/api/v1/viewer/${viewerData.imageId}`
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+  const loadViewer = useCallback(
+    async (imageId) => {
+      const trimmedId = imageId.trim();
+      if (!trimmedId) {
+        setViewerData((prev) => ({
+          ...prev,
+          state: "error",
+          imageUrl: "",
+          boxes: [],
+          message: "Image id is required"
+        }));
+        return;
       }
-      const data = await response.json();
-      setViewerData({
-        state: "ok",
-        imageId: data.image_id,
-        imageUrl: data.image_url,
-        boxes: Array.isArray(data.boxes) ? data.boxes : [],
-        message: ""
-      });
-    } catch (error) {
-      setViewerData((prev) => ({
-        ...prev,
-        state: "error",
-        imageUrl: "",
-        boxes: [],
-        message: error?.message ?? "Network error"
-      }));
-    }
-  }, [baseUrl, viewerData.imageId]);
+      setViewerData((prev) => ({ ...prev, state: "loading", message: "" }));
+      try {
+        const response = await fetch(
+          `${baseUrl}/api/v1/viewer/${encodeURIComponent(trimmedId)}`
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        setViewerData({
+          state: "ok",
+          imageId: data.image_id,
+          imageUrl: data.image_url,
+          boxes: Array.isArray(data.boxes) ? data.boxes : [],
+          message: ""
+        });
+      } catch (error) {
+        setViewerData((prev) => ({
+          ...prev,
+          state: "error",
+          imageUrl: "",
+          boxes: [],
+          message: error?.message ?? "Network error"
+        }));
+      }
+    },
+    [baseUrl]
+  );
 
   useEffect(() => {
-    loadViewer();
-  }, [loadViewer]);
+    loadViewer(activeImageId);
+  }, [loadViewer, activeImageId]);
 
   const resolvedImageUrl = useMemo(() => {
     if (!viewerData.imageUrl) return "";
     if (viewerData.imageUrl.startsWith("http")) return viewerData.imageUrl;
     return `${baseUrl}${viewerData.imageUrl}`;
   }, [baseUrl, viewerData.imageUrl]);
+
+  const displayedImageId = viewerData.imageId || activeImageId;
 
   const expertBoxes = useMemo(
     () =>
@@ -195,6 +213,25 @@ export default function App() {
               <button className="api-refresh" type="button" onClick={checkHealth}>
                 Refresh
               </button>
+              <form
+                className="viewer-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setActiveImageId(imageIdInput.trim());
+                }}
+              >
+                <input
+                  className="viewer-input"
+                  type="text"
+                  value={imageIdInput}
+                  onChange={(event) => setImageIdInput(event.target.value)}
+                  placeholder="Image id"
+                  aria-label="Image id"
+                />
+                <button className="viewer-submit" type="submit">
+                  Load
+                </button>
+              </form>
               <label className="toggle">
                 <input
                   type="checkbox"
@@ -219,7 +256,7 @@ export default function App() {
                 <img
                   className="stage-img"
                   src={resolvedImageUrl}
-                  alt={`Image ${viewerData.imageId}`}
+                  alt={`Image ${displayedImageId}`}
                   ref={imageRef}
                   onLoad={updateImageRect}
                 />
@@ -230,7 +267,7 @@ export default function App() {
                     : `Image unavailable: ${viewerData.message}`}
                 </div>
               )}
-              <div className="stage-label">{viewerData.imageId}</div>
+              <div className="stage-label">{displayedImageId}</div>
               {overlayStyle && showModel && (
                 <div className="overlay model" style={overlayStyle}>
                   {modelBoxes.map((box) => (

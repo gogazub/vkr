@@ -71,6 +71,46 @@ body {
   gap: 16px;
   font-size: 12px;
   color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.viewer-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.viewer-input {
+  background: transparent;
+  border: 1px solid rgba(230, 232, 234, 0.2);
+  color: var(--ink);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.viewer-input:focus-visible {
+  outline: 2px solid rgba(77, 208, 225, 0.5);
+  outline-offset: 2px;
+}
+
+.viewer-submit {
+  background: rgba(230, 232, 234, 0.12);
+  border: 1px solid rgba(230, 232, 234, 0.2);
+  color: var(--ink);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.viewer-submit:hover {
+  border-color: rgba(230, 232, 234, 0.4);
+}
+
+.viewer-submit:focus-visible {
+  outline: 2px solid rgba(77, 208, 225, 0.5);
+  outline-offset: 2px;
 }
 
 .api-refresh {
