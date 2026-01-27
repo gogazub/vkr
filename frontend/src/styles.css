@@ -73,6 +73,25 @@ body {
   color: var(--muted);
 }
 
+.api-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(230, 232, 234, 0.2);
+  color: var(--muted);
+}
+
+.api-status[data-state="ok"] {
+  color: #36d6a8;
+  border-color: rgba(54, 214, 168, 0.45);
+}
+
+.api-status[data-state="error"] {
+  color: #ff5a7a;
+  border-color: rgba(255, 90, 122, 0.45);
+}
+
 .toggle {
   display: flex;
   align-items: center;
@@ -93,10 +112,6 @@ body {
   border-radius: 20px;
   background: #18212b;
   border: 1px solid rgba(230, 232, 234, 0.08);
-}
-
-.stage-glow {
-  display: none;
 }
 
 .stage-label {

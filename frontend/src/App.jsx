@@ -1,28 +1,4 @@
-import { useState } from "react";
-
-const sampleCases = [
-  {
-    id: "IMG-9f2a",
-    status: "Reviewed",
-    cells: 214,
-    agreement: 0.92,
-    updated: "2h ago"
-  },
-  {
-    id: "IMG-81bc",
-    status: "Pending",
-    cells: 187,
-    agreement: 0.0,
-    updated: "Yesterday"
-  },
-  {
-    id: "IMG-5c10",
-    status: "Reviewed",
-    cells: 199,
-    agreement: 0.88,
-    updated: "Jan 25"
-  }
-];
+import { useEffect, useState } from "react";
 
 const modelBoxes = [
   { id: "m1", top: 16, left: 12, width: 22, height: 16 },
@@ -39,14 +15,66 @@ const expertBoxes = [
 export default function App() {
   const [showModel, setShowModel] = useState(true);
   const [showExpert, setShowExpert] = useState(true);
+  const [apiInfo, setApiInfo] = useState({ state: "loading" });
+
+  useEffect(() => {
+    let isMounted = true;
+    const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+    const loadHealth = async () => {
+      try {
+        const response = await fetch(`${baseUrl}/health`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        if (isMounted) {
+          setApiInfo({
+            state: "ok",
+            status: data.status ?? "ok",
+            service: data.service,
+            version: data.version
+          });
+        }
+      } catch (error) {
+        if (isMounted) {
+          setApiInfo({ state: "error", message: error?.message ?? "Network error" });
+        }
+      }
+    };
+
+    loadHealth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="app-shell">
-      <main className="content-grid single">
+      <main className="content-grid">
         <section className="panel viewer">
           <div className="panel-header">
             <h2>Interactive viewer</h2>
             <div className="toggles">
+              <span
+                className="api-status"
+                data-state={apiInfo.state}
+                title={
+                  apiInfo.state === "ok"
+                    ? `${apiInfo.service ?? "API"} ${apiInfo.version ?? ""}`.trim()
+                    : apiInfo.state === "error"
+                      ? apiInfo.message
+                      : "Connecting to API"
+                }
+              >
+                API:{" "}
+                {apiInfo.state === "loading"
+                  ? "connecting..."
+                  : apiInfo.state === "error"
+                    ? "offline"
+                    : apiInfo.status}
+              </span>
               <label className="toggle">
                 <input
                   type="checkbox"
@@ -67,7 +95,6 @@ export default function App() {
           </div>
           <div className="viewer-stage">
             <div className="stage-image">
-              <div className="stage-glow" />
               <div className="stage-label">Bone marrow smear · 1024×1024</div>
             </div>
             {showModel && (
