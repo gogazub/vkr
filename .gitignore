@@ -43,6 +43,11 @@ build/
 dist/
 *.egg-info/
 
+# Frontend
+node_modules/
+frontend/.vite/
+frontend/dist/
+
 # Data and models (test data, not committed)
 data/
 models/
