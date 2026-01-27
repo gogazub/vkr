@@ -26,19 +26,8 @@
 body {
   font-family: var(--mono);
   color: var(--ink);
-  background: radial-gradient(900px circle at 20% 10%, rgba(77, 208, 225, 0.12) 0%, var(--bg) 48%, #070a0e 100%);
+  background: var(--bg);
   min-height: 100vh;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image: linear-gradient(90deg, rgba(230, 232, 234, 0.06) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(230, 232, 234, 0.06) 1px, transparent 1px);
-  background-size: 140px 140px;
-  pointer-events: none;
-  z-index: -1;
 }
 
 #root {
@@ -84,7 +73,7 @@ h1 {
 }
 
 .hero-card {
-  background: linear-gradient(150deg, #1b242e 0%, #11171f 100%);
+  background: var(--card);
   border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: var(--shadow);
@@ -285,7 +274,7 @@ h1 {
 .viewer-stage {
   position: relative;
   border-radius: var(--radius-lg);
-  background: linear-gradient(140deg, #0b2226 0%, #1e3a41 40%, #1c1b1a 100%);
+  background: #10161d;
   min-height: 320px;
   overflow: hidden;
 }
@@ -294,17 +283,12 @@ h1 {
   position: absolute;
   inset: 18px;
   border-radius: 20px;
-  background: linear-gradient(140deg, #2d3f46 0%, #1f2c33 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #18212b;
+  border: 1px solid rgba(230, 232, 234, 0.08);
 }
 
 .stage-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 20%, rgba(242, 143, 59, 0.25), transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(217, 72, 98, 0.3), transparent 55%);
-  border-radius: 20px;
-  opacity: 0.7;
+  display: none;
 }
 
 .stage-label {
