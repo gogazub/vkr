@@ -28,9 +28,17 @@ class Settings(BaseSettings):
     IMAGES_DIR: str = "images"
     LABELS_DIR: str = "labels"
     MODEL_FILE: str = "model.onnx"
+
+    # Model inference defaults
+    MODEL_IMG_SIZE: int = 640
+    MODEL_CONF_THRESHOLD: float = 0.25
+    MODEL_MAX_DET: int = 100
     
     # Security
     SECRET_KEY: str = "dev-secret-key"
+
+    # Logging
+    LOG_LEVEL: str = "INFO"
     
     model_config = SettingsConfigDict(
         env_file=".env",

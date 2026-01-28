@@ -1,16 +1,39 @@
 """FastAPI application entry point"""
+import logging
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from app.config import settings
-from app.infrastructure.model_runner import StubModelRunner
+from app.infrastructure.model_runner import OnnxModelRunner, StubModelRunner
 from app.providers.local_fs import LocalFSAnnotationProvider, LocalFSImageProvider
 from app.services.model_worker import ModelWorker
-from app.utils.exceptions import AnnotationNotFoundError, ImageNotFoundError, InvalidFormatError
+from app.utils.exceptions import (
+    AnnotationNotFoundError,
+    ImageNotFoundError,
+    InvalidFormatError,
+    ModelNotFoundError,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def configure_logging() -> None:
+    level_name = settings.LOG_LEVEL.upper()
+    level = getattr(logging, level_name, logging.INFO)
+    root_logger = logging.getLogger()
+    if not root_logger.handlers:
+        logging.basicConfig(
+            level=level,
+            format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        )
+    root_logger.setLevel(level)
 
 
 def create_app() -> FastAPI:
     """Create and configure FastAPI application"""
+    configure_logging()
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
@@ -30,7 +53,21 @@ def create_app() -> FastAPI:
     
     image_provider = LocalFSImageProvider()
     annotation_provider = LocalFSAnnotationProvider()
-    model_runner = StubModelRunner()
+    model_path = Path(settings.MODELS_PATH) / settings.MODEL_FILE
+    try:
+        model_runner = OnnxModelRunner(
+            model_path=model_path,
+            img_size=settings.MODEL_IMG_SIZE,
+            conf_threshold=settings.MODEL_CONF_THRESHOLD,
+            max_det=settings.MODEL_MAX_DET,
+        )
+        logger.info("Using ONNX model: %s", model_path)
+    except ModelNotFoundError:
+        logger.warning("Model file not found. Using stub runner. path=%s", model_path)
+        model_runner = StubModelRunner()
+    except Exception:
+        logger.exception("Failed to initialize ONNX model. Using stub runner. path=%s", model_path)
+        model_runner = StubModelRunner()
     model_worker = ModelWorker(image_provider, annotation_provider, model_runner)
 
     # Health check endpoint
@@ -111,6 +148,9 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except InvalidFormatError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception:
+            logger.exception("Analysis failed for image_id=%s", image_id)
+            raise HTTPException(status_code=500, detail="Analysis failed")
         return {
             **result,
             "image_url": f"/api/v1/images/{image_id}/file",

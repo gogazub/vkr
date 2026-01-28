@@ -10,7 +10,7 @@ psycopg2-binary==2.9.9
 alembic==1.12.1
 
 # AI/ML
-onnxruntime==1.17.0
+onnxruntime==1.18.1
 pillow==10.1.0
 numpy==1.26.2
 
