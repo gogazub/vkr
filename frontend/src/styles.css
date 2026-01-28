@@ -165,6 +165,32 @@ body {
   overflow: hidden;
 }
 
+.stats-bar {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(230, 232, 234, 0.08);
+  padding-top: 12px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.stat-value {
+  font-size: 20px;
+  font-family: var(--display);
+}
+
 .stage-image {
   position: absolute;
   inset: 18px;

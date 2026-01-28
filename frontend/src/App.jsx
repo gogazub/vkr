@@ -200,6 +200,9 @@ export default function App() {
     };
   }, [imageRect]);
 
+  const expertCount = viewerData.stats?.expert_count ?? "—";
+  const modelCount = viewerData.stats?.model_count ?? "—";
+
   return (
     <div className="app-shell">
       <main className="content-grid">
@@ -315,6 +318,16 @@ export default function App() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+          <div className="stats-bar">
+            <div className="stat-item">
+              <span className="stat-label">Expert boxes</span>
+              <span className="stat-value">{expertCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Model boxes</span>
+              <span className="stat-value">{modelCount}</span>
             </div>
           </div>
         </section>
