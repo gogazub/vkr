@@ -1,0 +1,111 @@
+@startuml
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment left
+left to right direction
+
+title Project map — Modules, layers, extension points
+
+actor "User" as user
+
+package "Frontend (React)" as FE {
+  [ui.entry\nfrontend/src/main.jsx] as ui_entry
+  [ui.app\nfrontend/src/App.jsx\n- viewer + toggles\n- calls /analysis] as ui_app
+  [ui.styles\nfrontend/src/styles.css] as ui_css
+
+  ui_entry --> ui_app
+  ui_app --> ui_css
+}
+
+package "Backend (FastAPI)" as BE {
+
+  package "HTTP / Composition" as HTTP {
+    [api.app\napp/main.py\n- routes\n- DI wiring] as api_app
+  }
+
+  package "Config" as CFG {
+    [cfg.settings\napp/config.py\n- env settings] as cfg
+  }
+
+  package "Service orchestration" as SVC {
+    [svc.worker\napp/services/model_worker.py\n- end-to-end analysis] as worker
+  }
+
+  package "Providers (Data access)" as PROV {
+    interface "IImageProvider" as IImg
+    interface "IAnnotationProvider" as IAnn
+
+    [LocalFS providers\napp/providers/local_fs.py\n- read image/labels\n- validate formats] as localfs
+
+    IImg <|.. localfs
+    IAnn <|.. localfs
+  }
+
+  package "Inference (Model runners)" as INFRA {
+    interface "IModelRunner" as IRunner
+    [OnnxModelRunner\napp/infrastructure/model_runner.py\n- onnxruntime\n- preprocess/parse] as onnx
+    [StubModelRunner\napp/infrastructure/model_runner.py\n- deterministic dev output] as stub
+
+    IRunner <|.. onnx
+    IRunner <|.. stub
+  }
+
+  package "Domain core" as CORE {
+    [core.iou\napp/core/iou.py] as iou
+    [core.match\napp/core/matcher.py\n- greedy matching\n- optional class filter] as match
+    [core.metrics\napp/core/metrics.py\n- TP/FP/FN\n- P/R/F1] as metrics
+
+    match --> iou : uses IoU
+  }
+
+  package "Utilities" as UTIL {
+    [util.errors\napp/utils/exceptions.py\n- domain errors\n- http mapping] as errors
+  }
+
+  ' wiring
+  api_app --> cfg : reads settings
+  api_app --> worker : calls for /analysis
+
+  worker --> IImg : load image
+  worker --> IAnn : load GT boxes
+  worker --> IRunner : inference
+  worker --> match : matching
+  worker --> metrics : stats
+  api_app --> errors
+
+}
+
+package "Runtime data (DEV)" as DATA {
+  [data.images\n/data/images] as d_images
+  [data.labels\n/data/labels] as d_labels
+  [models/*.onnx\n/models] as d_models
+}
+
+' external calls
+user --> ui_app
+ui_app --> api_app : GET /health\nGET /api/v1/analysis/{image_id}
+
+' providers -> data
+localfs --> d_images : read image bytes
+localfs --> d_labels : read YOLO labels
+onnx --> d_models : load model file
+
+note right of PROV
+Extension point #1: Providers
+- add DB/S3/gRPC backends
+- keep IImageProvider/IAnnotationProvider
+end note
+
+note right of INFRA
+Extension point #2: Model runners
+- TensorRT / remote inference
+- keep normalized center-box output
+end note
+
+note right of CORE
+Extension point #3: Metrics
+- add confusion matrix, mAP, Kappa, etc.
+end note
+
+@enduml

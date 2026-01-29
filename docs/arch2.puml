@@ -1,0 +1,82 @@
+@startuml
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment left
+left to right direction
+
+title Runtime flow — /api/v1/analysis/{image_id}
+
+component "ui.app\n(App.jsx)" as UI
+component "api.app\n(main.py)\n/analysis route" as API
+component "svc.worker\n(ModelWorker)" as WORKER
+
+interface "IImageProvider" as IIMG
+interface "IAnnotationProvider" as IANN
+interface "IModelRunner" as IRUN
+
+component "prov.image\n(LocalFSImageProvider)" as PIMG
+component "prov.ann\n(LocalFSAnnotationProvider)" as PANN
+
+component "runner.onnx\n(OnnxModelRunner)" as RONNX
+component "runner.stub\n(StubModelRunner)" as RSTUB
+
+component "core.match\n(matcher.py)" as MATCH
+component "core.iou\n(iou.py)" as IOU
+component "core.metrics\n(metrics.py)" as METRICS
+
+database "data/images" as IMAGES
+database "data/labels" as LABELS
+database "models/model.onnx" as MODEL
+
+' UI -> API
+UI --> API : GET /analysis/{image_id}
+
+' route -> worker
+API --> WORKER : analyze(image_id)
+
+' worker orchestrates
+WORKER --> IIMG : load_image_bytes(image_id)
+WORKER --> IANN : load_gt_boxes(image_id)
+WORKER --> IRUN : predict(image_bytes)
+
+' current implementations
+IIMG <|.. PIMG
+IANN <|.. PANN
+IRUN <|.. RONNX
+IRUN <|.. RSTUB
+
+PIMG --> IMAGES
+PANN --> LABELS
+RONNX --> MODEL
+
+' domain core
+WORKER --> MATCH : match(pred, gt, iou_thr)
+MATCH --> IOU : IoU(a,b)
+WORKER --> METRICS : stats(matches, unmatched)
+
+' response
+API <-- WORKER : payload:\nimage_id + boxes + matches + stats
+UI <-- API : render overlays + numbers
+
+note bottom of IIMG
+Swap provider here:
+- DB / S3 / gRPC
+No changes in MATCH/METRICS
+end note
+
+note bottom of IRUN
+Swap runner here:
+- TensorRT / remote svc
+Keep output format:
+{class_id, x,y,w,h,score}
+end note
+
+note bottom of MATCH
+Tune matching here:
+- class-aware matching
+- Hungarian matching
+- multi-IoU thresholds
+end note
+
+@enduml
