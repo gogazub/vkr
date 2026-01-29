@@ -138,10 +138,16 @@ def create_app() -> FastAPI:
         }
 
     @app.get("/api/v1/analysis/{image_id}", tags=["Analysis"])
-    async def analyze_image(image_id: str):
+    async def analyze_image(
+        image_id: str,
+        iou_threshold: float = 0.5,
+        class_aware: bool = True,
+    ):
         """Return combined payload (image + expert + model + stats)"""
         try:
-            result = model_worker.analyze(image_id)
+            result = model_worker.analyze(
+                image_id, iou_threshold=iou_threshold, class_aware=class_aware
+            )
         except ImageNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except AnnotationNotFoundError as exc:

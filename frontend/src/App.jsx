@@ -202,6 +202,12 @@ export default function App() {
 
   const expertCount = viewerData.stats?.expert_count ?? "—";
   const modelCount = viewerData.stats?.model_count ?? "—";
+  const tpCount = viewerData.stats?.tp ?? "—";
+  const fpCount = viewerData.stats?.fp ?? "—";
+  const fnCount = viewerData.stats?.fn ?? "—";
+  const precision = viewerData.stats?.precision;
+  const recall = viewerData.stats?.recall;
+  const f1 = viewerData.stats?.f1;
 
   return (
     <div className="app-shell">
@@ -328,6 +334,36 @@ export default function App() {
             <div className="stat-item">
               <span className="stat-label">Model boxes</span>
               <span className="stat-value">{modelCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">TP</span>
+              <span className="stat-value">{tpCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">FP</span>
+              <span className="stat-value">{fpCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">FN</span>
+              <span className="stat-value">{fnCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Precision</span>
+              <span className="stat-value">
+                {precision === undefined ? "—" : precision.toFixed(2)}
+              </span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Recall</span>
+              <span className="stat-value">
+                {recall === undefined ? "—" : recall.toFixed(2)}
+              </span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">F1</span>
+              <span className="stat-value">
+                {f1 === undefined ? "—" : f1.toFixed(2)}
+              </span>
             </div>
           </div>
         </section>

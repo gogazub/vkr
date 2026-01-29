@@ -36,3 +36,4 @@ def test_model_worker_returns_combined_payload(tmp_path):
     assert len(result["model_boxes"]) == 1
     assert result["stats"]["expert_count"] == 1
     assert result["stats"]["model_count"] == 1
+    assert "tp" in result["stats"]
