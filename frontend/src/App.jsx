@@ -326,7 +326,7 @@ export default function App() {
       timerId: setTimeout(() => {
         setHoveredImageId(imageId);
         hoverTimeoutRef.current = null;
-      }, 300)
+      }, 600)
     };
   }, []);
 
@@ -352,7 +352,7 @@ export default function App() {
         <div className="brand">
           <div className="brand-mark">MC</div>
           <div className="brand-text">
-            <span className="brand-title">MediCore</span>
+            <span className="brand-title">Visualization Analysis Service</span>
             <span className="brand-subtitle">Analytics Console</span>
           </div>
         </div>
@@ -439,13 +439,6 @@ export default function App() {
                     Load
                   </button>
                 </form>
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => setShowImageStats((prev) => !prev)}
-                >
-                  {showImageStats ? "Hide image stats" : "Show image stats"}
-                </button>
                 <div className="toggle-group">
                   <label className="toggle">
                     <input
@@ -521,46 +514,60 @@ export default function App() {
               </div>
             </div>
 
-            {showImageStats && (
-              <div className="stats-compact">
-                <div className="stat-chip">
-                  <span className="stat-label">Expert</span>
-                  <span className="stat-value">{expertCount}</span>
-                </div>
-                <div className="stat-chip">
-                  <span className="stat-label">Model</span>
-                  <span className="stat-value">{modelCount}</span>
-                </div>
-                <div className="stat-chip">
-                  <span className="stat-label">TP</span>
-                  <span className="stat-value">{tpCount}</span>
-                </div>
-                <div className="stat-chip">
-                  <span className="stat-label">FP</span>
-                  <span className="stat-value">{fpCount}</span>
-                </div>
-                <div className="stat-chip">
-                  <span className="stat-label">FN</span>
-                  <span className="stat-value">{fnCount}</span>
-                </div>
-                <div className="stat-chip">
-                  <span className="stat-label">Precision</span>
-                  <span className="stat-value">
-                    {precision === undefined ? "—" : precision.toFixed(2)}
-                  </span>
-                </div>
-                <div className="stat-chip">
-                  <span className="stat-label">Recall</span>
-                  <span className="stat-value">
-                    {recall === undefined ? "—" : recall.toFixed(2)}
-                  </span>
-                </div>
-                <div className="stat-chip">
-                  <span className="stat-label">F1</span>
-                  <span className="stat-value">{f1 === undefined ? "—" : f1.toFixed(2)}</span>
-                </div>
+            <div className="stats-section">
+              <div className="stats-header">
+                <span className="stats-title">Image stats</span>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => setShowImageStats((prev) => !prev)}
+                >
+                  {showImageStats ? "Hide image stats" : "Show image stats"}
+                </button>
               </div>
-            )}
+              {showImageStats && (
+                <div className="stats-compact">
+                  <div className="stat-chip">
+                    <span className="stat-label">Expert</span>
+                    <span className="stat-value">{expertCount}</span>
+                  </div>
+                  <div className="stat-chip">
+                    <span className="stat-label">Model</span>
+                    <span className="stat-value">{modelCount}</span>
+                  </div>
+                  <div className="stat-chip">
+                    <span className="stat-label">TP</span>
+                    <span className="stat-value">{tpCount}</span>
+                  </div>
+                  <div className="stat-chip">
+                    <span className="stat-label">FP</span>
+                    <span className="stat-value">{fpCount}</span>
+                  </div>
+                  <div className="stat-chip">
+                    <span className="stat-label">FN</span>
+                    <span className="stat-value">{fnCount}</span>
+                  </div>
+                  <div className="stat-chip">
+                    <span className="stat-label">Precision</span>
+                    <span className="stat-value">
+                      {precision === undefined ? "—" : precision.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="stat-chip">
+                    <span className="stat-label">Recall</span>
+                    <span className="stat-value">
+                      {recall === undefined ? "—" : recall.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="stat-chip">
+                    <span className="stat-label">F1</span>
+                    <span className="stat-value">
+                      {f1 === undefined ? "—" : f1.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
 
           <section className="panel dataset-summary">
@@ -630,37 +637,35 @@ export default function App() {
                   Preview images on hover and select a row to load it in the viewer.
                 </p>
               </div>
-              <span className="table-note">Hover preview delay: 0.3s</span>
+              <span className="table-note">Hover preview delay: 0.6s</span>
             </div>
 
             <div className="image-table-wrap">
               <table className="image-table">
                 <thead>
                   <tr>
-                    <th>Status</th>
                     <th>Image id</th>
                     <th>Preview</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {imageList.state === "loading" && (
                     <tr>
-                      <td colSpan={4} className="table-empty">
+                      <td colSpan={2} className="table-empty">
                         Loading images...
                       </td>
                     </tr>
                   )}
                   {imageList.state === "error" && (
                     <tr>
-                      <td colSpan={4} className="table-empty">
+                      <td colSpan={2} className="table-empty">
                         {imageList.message}
                       </td>
                     </tr>
                   )}
                   {imageList.state === "ok" && imageList.items.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="table-empty">
+                      <td colSpan={2} className="table-empty">
                         No images found
                       </td>
                     </tr>
@@ -668,9 +673,6 @@ export default function App() {
                   {imageList.state === "ok" &&
                     imageList.items.map((item) => {
                       const isActive = item.id === displayedImageId;
-                      const isHovered = hoveredImageId === item.id;
-                      const statusState = isActive ? "active" : isHovered ? "watch" : "idle";
-                      const statusLabel = isActive ? "Active" : isHovered ? "Preview" : "Idle";
 
                       return (
                         <tr
@@ -690,9 +692,6 @@ export default function App() {
                           onFocus={() => handleHoverFocus(item.id)}
                           onBlur={() => handleHoverEnd(item.id)}
                         >
-                          <td className="cell-status" data-state={statusState}>
-                            <span className="status-pill">{statusLabel}</span>
-                          </td>
                           <td className="image-id">{item.id}</td>
                           <td className="image-preview-cell">
                             {hoveredImageId === item.id ? (
@@ -705,18 +704,6 @@ export default function App() {
                             ) : (
                               <span className="preview-hint">Hover to preview</span>
                             )}
-                          </td>
-                          <td className="actions-cell">
-                            <button className="icon-button" type="button" aria-label="Edit">
-                              <svg viewBox="0 0 20 20" aria-hidden="true">
-                                <path d="M4 13.8V16h2.2l6.6-6.6-2.2-2.2L4 13.8zm10.9-6.2c.3-.3.3-.8 0-1.1l-1.4-1.4c-.3-.3-.8-.3-1.1 0l-1.1 1.1 2.2 2.2 1.4-1.4z" />
-                              </svg>
-                            </button>
-                            <button className="icon-button" type="button" aria-label="Delete">
-                              <svg viewBox="0 0 20 20" aria-hidden="true">
-                                <path d="M6 6h8l-.7 9.5c0 .8-.7 1.5-1.5 1.5H8.2c-.8 0-1.5-.7-1.5-1.5L6 6zm2.5-2h3L12 3h3v2H5V3h3l.5 1z" />
-                              </svg>
-                            </button>
                           </td>
                         </tr>
                       );
