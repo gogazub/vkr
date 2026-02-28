@@ -308,289 +308,391 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <main className="content-grid">
-        <section className="panel viewer">
-          <div className="panel-header">
-            <h2>Interactive viewer</h2>
-            <div className="toggles">
-              <span
-                className="api-status"
-                data-state={apiInfo.state}
-                title={
-                  apiInfo.state === "ok"
-                    ? `${apiInfo.service ?? "API"} ${apiInfo.version ?? ""}`.trim()
-                    : apiInfo.state === "error"
-                      ? apiInfo.message
-                      : "Connecting to API"
-                }
-              >
-                API:{" "}
-                {apiInfo.state === "loading"
-                  ? "connecting..."
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="brand-mark">MC</div>
+          <div className="brand-text">
+            <span className="brand-title">MediCore</span>
+            <span className="brand-subtitle">Analytics Console</span>
+          </div>
+        </div>
+        <nav className="nav">
+          <button className="nav-item is-active" type="button">
+            Dashboard
+          </button>
+          <button className="nav-item" type="button">
+            Image Review
+          </button>
+          <button className="nav-item" type="button">
+            Quality Metrics
+          </button>
+          <button className="nav-item" type="button">
+            Audit Logs
+          </button>
+          <button className="nav-item" type="button">
+            Settings
+          </button>
+        </nav>
+        <div className="sidebar-section">
+          <span className="section-label">System status</span>
+          <div className="status-card">
+            <span
+              className="api-status"
+              data-state={apiInfo.state}
+              title={
+                apiInfo.state === "ok"
+                  ? `${apiInfo.service ?? "API"} ${apiInfo.version ?? ""}`.trim()
                   : apiInfo.state === "error"
-                    ? "offline"
-                    : apiInfo.status}
-              </span>
-              <button className="api-refresh" type="button" onClick={checkHealth}>
-                Refresh
-              </button>
-              <form
-                className="viewer-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setActiveImageId(imageIdInput.trim());
-                }}
-              >
-                <input
-                  className="viewer-input"
-                  type="text"
-                  value={imageIdInput}
-                  onChange={(event) => setImageIdInput(event.target.value)}
-                  placeholder="Image id"
-                  aria-label="Image id"
-                />
-                <button className="viewer-submit" type="submit">
-                  Load
-                </button>
-              </form>
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={showExpert}
-                  onChange={() => setShowExpert((prev) => !prev)}
-                />
-                Expert layer
-              </label>
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={showModel}
-                  onChange={() => setShowModel((prev) => !prev)}
-                />
-                Model layer
-              </label>
-            </div>
+                    ? apiInfo.message
+                    : "Connecting to API"
+              }
+            >
+              API:{" "}
+              {apiInfo.state === "loading"
+                ? "connecting"
+                : apiInfo.state === "error"
+                  ? "offline"
+                  : apiInfo.status}
+            </span>
+            <button className="api-refresh" type="button" onClick={checkHealth}>
+              Refresh
+            </button>
           </div>
-          <div className="viewer-stage">
-            <div className="stage-image" ref={stageRef}>
-              {resolvedImageUrl && !imageLoadError ? (
-                <img
-                  className="stage-img"
-                  src={resolvedImageUrl}
-                  alt={`Image ${displayedImageId}`}
-                  ref={imageRef}
-                  onLoad={updateImageRect}
-                  onError={() => setImageLoadError(true)}
-                />
-              ) : (
-                <div className="stage-placeholder">
-                  {viewerData.state === "loading"
-                    ? "Loading image..."
-                    : `Image unavailable: ${viewerData.message || "Not found"}`}
-                </div>
-              )}
-              <div className="stage-label">{displayedImageId}</div>
-              {overlayStyle && showModel && !imageLoadError && (
-                <div className="overlay model" style={overlayStyle}>
-                  {modelBoxes.map((box) => (
-                    <span
-                      key={box.id}
-                      className="bbox"
-                      style={{
-                        top: `${box.top}%`,
-                        left: `${box.left}%`,
-                        width: `${box.width}%`,
-                        height: `${box.height}%`
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-              {overlayStyle && showExpert && !imageLoadError && (
-                <div className="overlay expert" style={overlayStyle}>
-                  {expertBoxes.map((box) => (
-                    <span
-                      key={box.id}
-                      className="bbox"
-                      style={{
-                        top: `${box.top}%`,
-                        left: `${box.left}%`,
-                        width: `${box.width}%`,
-                        height: `${box.height}%`
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="stats-bar">
-            <div className="stat-item">
-              <span className="stat-label">Expert boxes</span>
-              <span className="stat-value">{expertCount}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Model boxes</span>
-              <span className="stat-value">{modelCount}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">TP</span>
-              <span className="stat-value">{tpCount}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">FP</span>
-              <span className="stat-value">{fpCount}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">FN</span>
-              <span className="stat-value">{fnCount}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Precision</span>
-              <span className="stat-value">
-                {precision === undefined ? "—" : precision.toFixed(2)}
+          <div className="sidebar-metrics">
+            <div className="metric">
+              <span className="metric-label">Dataset images</span>
+              <span className="metric-value">
+                {datasetInfo.state === "ok" ? datasetInfo.imageCount : "—"}
               </span>
             </div>
-            <div className="stat-item">
-              <span className="stat-label">Recall</span>
-              <span className="stat-value">
-                {recall === undefined ? "—" : recall.toFixed(2)}
-              </span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">F1</span>
-              <span className="stat-value">
-                {f1 === undefined ? "—" : f1.toFixed(2)}
+            <div className="metric">
+              <span className="metric-label">Processed</span>
+              <span className="metric-value">
+                {datasetInfo.state === "ok" ? datasetInfo.processedCount : "—"}
               </span>
             </div>
           </div>
-        </section>
-        <section className="panel dataset">
-          <div className="panel-header">
-            <h2>Dataset overview</h2>
-            <div className="dataset-meta">
-              <span>Images: {datasetInfo.state === "ok" ? datasetInfo.imageCount : "—"}</span>
-              <span>
-                Processed: {datasetInfo.state === "ok" ? datasetInfo.processedCount : "—"}
-              </span>
-              {datasetInfo.state === "error" && (
-                <span className="dataset-error">{datasetInfo.message}</span>
-              )}
-            </div>
+          {datasetInfo.state === "error" && (
+            <div className="sidebar-alert">{datasetInfo.message}</div>
+          )}
+        </div>
+      </aside>
+
+      <div className="app-main">
+        <header className="topbar">
+          <div className="topbar-title">
+            <span className="topbar-kicker">Clinical Imaging Analytics</span>
+            <h1>Model Quality Dashboard</h1>
           </div>
-          <div className="stats-bar dataset-stats">
-            <div className="stat-item">
-              <span className="stat-label">Expert boxes</span>
-              <span className="stat-value">{datasetExpertCount}</span>
+          <div className="topbar-actions">
+            <div className="topbar-card">
+              <span className="topbar-label">Viewer image</span>
+              <span className="topbar-value">{displayedImageId || "—"}</span>
             </div>
-            <div className="stat-item">
-              <span className="stat-label">Model boxes</span>
-              <span className="stat-value">{datasetModelCount}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">TP</span>
-              <span className="stat-value">{datasetTpCount}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">FP</span>
-              <span className="stat-value">{datasetFpCount}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">FN</span>
-              <span className="stat-value">{datasetFnCount}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Precision</span>
-              <span className="stat-value">
-                {datasetPrecision === undefined ? "—" : datasetPrecision.toFixed(2)}
-              </span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Recall</span>
-              <span className="stat-value">
-                {datasetRecall === undefined ? "—" : datasetRecall.toFixed(2)}
-              </span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">F1</span>
-              <span className="stat-value">
+            <div className="topbar-card">
+              <span className="topbar-label">Dataset F1</span>
+              <span className="topbar-value">
                 {datasetF1 === undefined ? "—" : datasetF1.toFixed(2)}
               </span>
             </div>
           </div>
-          <div className="image-table-wrap">
-            <table className="image-table">
-              <thead>
-                <tr>
-                  <th>Image id</th>
-                  <th>Preview</th>
-                </tr>
-              </thead>
-              <tbody>
-                {imageList.state === "loading" && (
-                  <tr>
-                    <td colSpan={2} className="table-empty">
-                      Loading images...
-                    </td>
-                  </tr>
+        </header>
+
+        <main className="workspace">
+          <section className="panel viewer">
+            <div className="panel-header">
+              <div>
+                <h2>Image review</h2>
+                <p className="panel-subtitle">
+                  Overlay expert annotations with model detections for a selected study.
+                </p>
+              </div>
+              <div className="panel-actions">
+                <form
+                  className="viewer-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    setActiveImageId(imageIdInput.trim());
+                  }}
+                >
+                  <input
+                    className="viewer-input"
+                    type="text"
+                    value={imageIdInput}
+                    onChange={(event) => setImageIdInput(event.target.value)}
+                    placeholder="Enter image id"
+                    aria-label="Image id"
+                  />
+                  <button className="viewer-submit" type="submit">
+                    Load
+                  </button>
+                </form>
+                <div className="toggle-group">
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={showExpert}
+                      onChange={() => setShowExpert((prev) => !prev)}
+                    />
+                    Expert layer
+                  </label>
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={showModel}
+                      onChange={() => setShowModel((prev) => !prev)}
+                    />
+                    Model layer
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="viewer-stage">
+              <div className="stage-image" ref={stageRef}>
+                {resolvedImageUrl && !imageLoadError ? (
+                  <img
+                    className="stage-img"
+                    src={resolvedImageUrl}
+                    alt={`Image ${displayedImageId}`}
+                    ref={imageRef}
+                    onLoad={updateImageRect}
+                    onError={() => setImageLoadError(true)}
+                  />
+                ) : (
+                  <div className="stage-placeholder">
+                    {viewerData.state === "loading"
+                      ? "Loading image..."
+                      : `Image unavailable: ${viewerData.message || "Not found"}`}
+                  </div>
                 )}
-                {imageList.state === "error" && (
-                  <tr>
-                    <td colSpan={2} className="table-empty">
-                      {imageList.message}
-                    </td>
-                  </tr>
+                <div className="stage-label">{displayedImageId}</div>
+                {overlayStyle && showModel && !imageLoadError && (
+                  <div className="overlay model" style={overlayStyle}>
+                    {modelBoxes.map((box) => (
+                      <span
+                        key={box.id}
+                        className="bbox"
+                        style={{
+                          top: `${box.top}%`,
+                          left: `${box.left}%`,
+                          width: `${box.width}%`,
+                          height: `${box.height}%`
+                        }}
+                      />
+                    ))}
+                  </div>
                 )}
-                {imageList.state === "ok" && imageList.items.length === 0 && (
-                  <tr>
-                    <td colSpan={2} className="table-empty">
-                      No images found
-                    </td>
-                  </tr>
+                {overlayStyle && showExpert && !imageLoadError && (
+                  <div className="overlay expert" style={overlayStyle}>
+                    {expertBoxes.map((box) => (
+                      <span
+                        key={box.id}
+                        className="bbox"
+                        style={{
+                          top: `${box.top}%`,
+                          left: `${box.left}%`,
+                          width: `${box.width}%`,
+                          height: `${box.height}%`
+                        }}
+                      />
+                    ))}
+                  </div>
                 )}
-                {imageList.state === "ok" &&
-                  imageList.items.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="image-row"
-                      data-active={item.id === displayedImageId}
-                      tabIndex={0}
-                      onClick={() => handleSelectImage(item.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          handleSelectImage(item.id);
-                        }
-                      }}
-                      onMouseEnter={() => setHoveredImageId(item.id)}
-                      onMouseLeave={() =>
-                        setHoveredImageId((prev) => (prev === item.id ? "" : prev))
-                      }
-                      onFocus={() => setHoveredImageId(item.id)}
-                      onBlur={() =>
-                        setHoveredImageId((prev) => (prev === item.id ? "" : prev))
-                      }
-                    >
-                      <td className="image-id">{item.id}</td>
-                      <td className="image-preview-cell">
-                        {hoveredImageId === item.id ? (
-                          <img
-                            className="image-preview"
-                            src={resolveImageUrl(item.image_url)}
-                            alt={`Preview ${item.id}`}
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span className="preview-hint">Hover to preview</span>
-                        )}
+              </div>
+            </div>
+
+            <div className="stats-bar">
+              <div className="stat-item">
+                <span className="stat-label">Expert boxes</span>
+                <span className="stat-value">{expertCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Model boxes</span>
+                <span className="stat-value">{modelCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">TP</span>
+                <span className="stat-value">{tpCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">FP</span>
+                <span className="stat-value">{fpCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">FN</span>
+                <span className="stat-value">{fnCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Precision</span>
+                <span className="stat-value">
+                  {precision === undefined ? "—" : precision.toFixed(2)}
+                </span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Recall</span>
+                <span className="stat-value">
+                  {recall === undefined ? "—" : recall.toFixed(2)}
+                </span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">F1</span>
+                <span className="stat-value">{f1 === undefined ? "—" : f1.toFixed(2)}</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel dataset">
+            <div className="panel-header">
+              <div>
+                <h2>Dataset performance</h2>
+                <p className="panel-subtitle">Aggregate results across the dataset.</p>
+              </div>
+              <div className="dataset-meta">
+                <span>Images: {datasetInfo.state === "ok" ? datasetInfo.imageCount : "—"}</span>
+                <span>
+                  Processed: {datasetInfo.state === "ok" ? datasetInfo.processedCount : "—"}
+                </span>
+              </div>
+            </div>
+
+            <div className="stats-bar dataset-stats">
+              <div className="stat-item">
+                <span className="stat-label">Expert boxes</span>
+                <span className="stat-value">{datasetExpertCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Model boxes</span>
+                <span className="stat-value">{datasetModelCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">TP</span>
+                <span className="stat-value">{datasetTpCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">FP</span>
+                <span className="stat-value">{datasetFpCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">FN</span>
+                <span className="stat-value">{datasetFnCount}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Precision</span>
+                <span className="stat-value">
+                  {datasetPrecision === undefined ? "—" : datasetPrecision.toFixed(2)}
+                </span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Recall</span>
+                <span className="stat-value">
+                  {datasetRecall === undefined ? "—" : datasetRecall.toFixed(2)}
+                </span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">F1</span>
+                <span className="stat-value">{datasetF1 === undefined ? "—" : datasetF1.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="image-table-wrap">
+              <table className="image-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Image id</th>
+                    <th>Preview</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {imageList.state === "loading" && (
+                    <tr>
+                      <td colSpan={4} className="table-empty">
+                        Loading images...
                       </td>
                     </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
+                  )}
+                  {imageList.state === "error" && (
+                    <tr>
+                      <td colSpan={4} className="table-empty">
+                        {imageList.message}
+                      </td>
+                    </tr>
+                  )}
+                  {imageList.state === "ok" && imageList.items.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="table-empty">
+                        No images found
+                      </td>
+                    </tr>
+                  )}
+                  {imageList.state === "ok" &&
+                    imageList.items.map((item) => {
+                      const isActive = item.id === displayedImageId;
+                      const isHovered = hoveredImageId === item.id;
+                      const statusState = isActive ? "active" : isHovered ? "watch" : "idle";
+                      const statusLabel = isActive ? "Active" : isHovered ? "Preview" : "Idle";
+
+                      return (
+                        <tr
+                          key={item.id}
+                          className="image-row"
+                          data-active={isActive}
+                          tabIndex={0}
+                          onClick={() => handleSelectImage(item.id)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              handleSelectImage(item.id);
+                            }
+                          }}
+                          onMouseEnter={() => setHoveredImageId(item.id)}
+                          onMouseLeave={() =>
+                            setHoveredImageId((prev) => (prev === item.id ? "" : prev))
+                          }
+                          onFocus={() => setHoveredImageId(item.id)}
+                          onBlur={() =>
+                            setHoveredImageId((prev) => (prev === item.id ? "" : prev))
+                          }
+                        >
+                          <td className="cell-status" data-state={statusState}>
+                            <span className="status-pill">{statusLabel}</span>
+                          </td>
+                          <td className="image-id">{item.id}</td>
+                          <td className="image-preview-cell">
+                            {hoveredImageId === item.id ? (
+                              <img
+                                className="image-preview"
+                                src={resolveImageUrl(item.image_url)}
+                                alt={`Preview ${item.id}`}
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="preview-hint">Hover to preview</span>
+                            )}
+                          </td>
+                          <td className="actions-cell">
+                            <button className="icon-button" type="button" aria-label="Edit">
+                              <svg viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="M4 13.8V16h2.2l6.6-6.6-2.2-2.2L4 13.8zm10.9-6.2c.3-.3.3-.8 0-1.1l-1.4-1.4c-.3-.3-.8-.3-1.1 0l-1.1 1.1 2.2 2.2 1.4-1.4z" />
+                              </svg>
+                            </button>
+                            <button className="icon-button" type="button" aria-label="Delete">
+                              <svg viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="M6 6h8l-.7 9.5c0 .8-.7 1.5-1.5 1.5H8.2c-.8 0-1.5-.7-1.5-1.5L6 6zm2.5-2h3L12 3h3v2H5V3h3l.5 1z" />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
