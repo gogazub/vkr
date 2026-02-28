@@ -45,6 +45,7 @@ export default function App() {
   });
   const [showImageStats, setShowImageStats] = useState(true);
   const [exportState, setExportState] = useState("idle");
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [hoveredImageId, setHoveredImageId] = useState("");
   const [imageRect, setImageRect] = useState({
     width: 0,
@@ -56,6 +57,7 @@ export default function App() {
   const stageRef = useRef(null);
   const imageRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
+  const exportMenuRef = useRef(null);
   const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
   const resolveImageUrl = useCallback(
     (imageUrl) => {
@@ -285,6 +287,17 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (!exportMenuRef.current) return;
+      if (!exportMenuRef.current.contains(event.target)) {
+        setExportMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
   const overlayStyle = useMemo(() => {
     if (!imageRect.width || !imageRect.height) return null;
     return {
@@ -312,17 +325,22 @@ export default function App() {
   const datasetTpCount = datasetStats?.tp ?? "—";
   const datasetFpCount = datasetStats?.fp ?? "—";
   const datasetFnCount = datasetStats?.fn ?? "—";
+  const isExporting = exportState.startsWith("loading");
 
   const handleSelectImage = useCallback((imageId) => {
     setActiveImageId(imageId);
     setImageIdInput(imageId);
   }, []);
 
-  const handleExportDataset = useCallback(async () => {
-    if (exportState === "loading") return;
-    setExportState("loading");
+  const handleExportDataset = useCallback(
+    async (format) => {
+      if (exportState.startsWith("loading")) return;
+      const normalizedFormat = format === "csv" ? "csv" : "xlsx";
+      setExportState(`loading-${normalizedFormat}`);
     try {
-      const response = await fetch(`${baseUrl}/api/v1/analysis/dataset/export`);
+      const response = await fetch(
+        `${baseUrl}/api/v1/analysis/dataset/export?format=${normalizedFormat}`
+      );
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -331,18 +349,21 @@ export default function App() {
       const link = document.createElement("a");
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
       link.href = url;
-      link.download = `dataset_report_${timestamp}.xlsx`;
+      link.download = `dataset_report_${timestamp}.${normalizedFormat}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
       setExportState("idle");
+      setExportMenuOpen(false);
     } catch (error) {
       console.error("Export failed", error);
       setExportState("error");
       setTimeout(() => setExportState("idle"), 2000);
     }
-  }, [baseUrl, exportState]);
+    },
+    [baseUrl, exportState]
+  );
 
   const handleHoverStart = useCallback((imageId) => {
     if (hoverTimeoutRef.current?.timerId) {
@@ -610,14 +631,36 @@ export default function App() {
                     Processed: {datasetInfo.state === "ok" ? datasetInfo.processedCount : "—"}
                   </span>
                 </div>
-                <button
-                  className="export-button"
-                  type="button"
-                  onClick={handleExportDataset}
-                  disabled={exportState === "loading"}
-                >
-                  {exportState === "loading" ? "Exporting..." : "Export Excel"}
-                </button>
+                <div className="export-menu" ref={exportMenuRef}>
+                  <button
+                    className="export-button"
+                    type="button"
+                    onClick={() => setExportMenuOpen((prev) => !prev)}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? "Exporting..." : "Export"}
+                  </button>
+                  {exportMenuOpen && (
+                    <div className="export-dropdown" role="menu">
+                      <button
+                        className="export-option"
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleExportDataset("xlsx")}
+                      >
+                        Excel (.xlsx)
+                      </button>
+                      <button
+                        className="export-option"
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleExportDataset("csv")}
+                      >
+                        CSV (.csv)
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

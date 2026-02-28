@@ -1,7 +1,8 @@
 """FastAPI application entry point"""
 import logging
+import csv
 from datetime import datetime, timezone
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -202,6 +203,7 @@ def create_app() -> FastAPI:
     async def export_dataset_report(
         iou_threshold: float = 0.5,
         class_aware: bool = True,
+        format: str = "xlsx",
     ):
         """Export per-image stats as Excel report"""
         logger.info(
@@ -233,7 +235,28 @@ def create_app() -> FastAPI:
             logger.exception("%s Dataset export failed", ERROR_PREFIX)
             raise HTTPException(status_code=500, detail="Dataset export failed")
 
+        normalized_format = format.lower().strip()
+        if normalized_format not in {"xlsx", "csv"}:
+            raise HTTPException(status_code=400, detail="Unsupported export format")
+
         headers, data = build_report_table(rows)
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+        if normalized_format == "csv":
+            text_stream = StringIO()
+            csv_writer = csv.writer(text_stream)
+            csv_writer.writerow(headers)
+            csv_writer.writerows(data)
+            content = text_stream.getvalue().encode("utf-8")
+            output = BytesIO(content)
+            output.seek(0)
+            filename = f"dataset_report_{timestamp}.csv"
+            return StreamingResponse(
+                output,
+                media_type="text/csv; charset=utf-8",
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            )
+
         workbook = Workbook()
         sheet = workbook.active
         sheet.title = "Dataset report"
@@ -244,7 +267,6 @@ def create_app() -> FastAPI:
         output = BytesIO()
         workbook.save(output)
         output.seek(0)
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         filename = f"dataset_report_{timestamp}.xlsx"
         return StreamingResponse(
             output,

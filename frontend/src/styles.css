@@ -509,6 +509,38 @@ body {
   opacity: 0.7;
 }
 
+.export-menu {
+  position: relative;
+}
+
+.export-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 16px rgba(31, 44, 54, 0.08);
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  z-index: 10;
+}
+
+.export-option {
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.export-option:hover {
+  background: #f3f7fb;
+}
+
 .image-table-wrap {
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
