@@ -43,6 +43,7 @@ export default function App() {
     items: [],
     message: ""
   });
+  const [showImageStats, setShowImageStats] = useState(true);
   const [hoveredImageId, setHoveredImageId] = useState("");
   const [imageRect, setImageRect] = useState({
     width: 0,
@@ -53,6 +54,7 @@ export default function App() {
   const controllerRef = useRef(null);
   const stageRef = useRef(null);
   const imageRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
   const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
   const resolveImageUrl = useCallback(
     (imageUrl) => {
@@ -273,6 +275,15 @@ export default function App() {
     setImageLoadError(false);
   }, [resolvedImageUrl]);
 
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current?.timerId) {
+        clearTimeout(hoverTimeoutRef.current.timerId);
+        hoverTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   const overlayStyle = useMemo(() => {
     if (!imageRect.width || !imageRect.height) return null;
     return {
@@ -306,6 +317,35 @@ export default function App() {
     setImageIdInput(imageId);
   }, []);
 
+  const handleHoverStart = useCallback((imageId) => {
+    if (hoverTimeoutRef.current?.timerId) {
+      clearTimeout(hoverTimeoutRef.current.timerId);
+    }
+    hoverTimeoutRef.current = {
+      id: imageId,
+      timerId: setTimeout(() => {
+        setHoveredImageId(imageId);
+        hoverTimeoutRef.current = null;
+      }, 300)
+    };
+  }, []);
+
+  const handleHoverEnd = useCallback((imageId) => {
+    if (hoverTimeoutRef.current?.id === imageId) {
+      clearTimeout(hoverTimeoutRef.current.timerId);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredImageId((prev) => (prev === imageId ? "" : prev));
+  }, []);
+
+  const handleHoverFocus = useCallback((imageId) => {
+    if (hoverTimeoutRef.current?.timerId) {
+      clearTimeout(hoverTimeoutRef.current.timerId);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredImageId(imageId);
+  }, []);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -321,16 +361,7 @@ export default function App() {
             Dashboard
           </button>
           <button className="nav-item" type="button">
-            Image Review
-          </button>
-          <button className="nav-item" type="button">
-            Quality Metrics
-          </button>
-          <button className="nav-item" type="button">
-            Audit Logs
-          </button>
-          <button className="nav-item" type="button">
-            Settings
+            Datasets
           </button>
         </nav>
         <div className="sidebar-section">
@@ -379,25 +410,6 @@ export default function App() {
       </aside>
 
       <div className="app-main">
-        <header className="topbar">
-          <div className="topbar-title">
-            <span className="topbar-kicker">Clinical Imaging Analytics</span>
-            <h1>Model Quality Dashboard</h1>
-          </div>
-          <div className="topbar-actions">
-            <div className="topbar-card">
-              <span className="topbar-label">Viewer image</span>
-              <span className="topbar-value">{displayedImageId || "—"}</span>
-            </div>
-            <div className="topbar-card">
-              <span className="topbar-label">Dataset F1</span>
-              <span className="topbar-value">
-                {datasetF1 === undefined ? "—" : datasetF1.toFixed(2)}
-              </span>
-            </div>
-          </div>
-        </header>
-
         <main className="workspace">
           <section className="panel viewer">
             <div className="panel-header">
@@ -427,6 +439,13 @@ export default function App() {
                     Load
                   </button>
                 </form>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => setShowImageStats((prev) => !prev)}
+                >
+                  {showImageStats ? "Hide image stats" : "Show image stats"}
+                </button>
                 <div className="toggle-group">
                   <label className="toggle">
                     <input
@@ -502,50 +521,52 @@ export default function App() {
               </div>
             </div>
 
-            <div className="stats-bar">
-              <div className="stat-item">
-                <span className="stat-label">Expert boxes</span>
-                <span className="stat-value">{expertCount}</span>
+            {showImageStats && (
+              <div className="stats-compact">
+                <div className="stat-chip">
+                  <span className="stat-label">Expert</span>
+                  <span className="stat-value">{expertCount}</span>
+                </div>
+                <div className="stat-chip">
+                  <span className="stat-label">Model</span>
+                  <span className="stat-value">{modelCount}</span>
+                </div>
+                <div className="stat-chip">
+                  <span className="stat-label">TP</span>
+                  <span className="stat-value">{tpCount}</span>
+                </div>
+                <div className="stat-chip">
+                  <span className="stat-label">FP</span>
+                  <span className="stat-value">{fpCount}</span>
+                </div>
+                <div className="stat-chip">
+                  <span className="stat-label">FN</span>
+                  <span className="stat-value">{fnCount}</span>
+                </div>
+                <div className="stat-chip">
+                  <span className="stat-label">Precision</span>
+                  <span className="stat-value">
+                    {precision === undefined ? "—" : precision.toFixed(2)}
+                  </span>
+                </div>
+                <div className="stat-chip">
+                  <span className="stat-label">Recall</span>
+                  <span className="stat-value">
+                    {recall === undefined ? "—" : recall.toFixed(2)}
+                  </span>
+                </div>
+                <div className="stat-chip">
+                  <span className="stat-label">F1</span>
+                  <span className="stat-value">{f1 === undefined ? "—" : f1.toFixed(2)}</span>
+                </div>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">Model boxes</span>
-                <span className="stat-value">{modelCount}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">TP</span>
-                <span className="stat-value">{tpCount}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">FP</span>
-                <span className="stat-value">{fpCount}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">FN</span>
-                <span className="stat-value">{fnCount}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Precision</span>
-                <span className="stat-value">
-                  {precision === undefined ? "—" : precision.toFixed(2)}
-                </span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Recall</span>
-                <span className="stat-value">
-                  {recall === undefined ? "—" : recall.toFixed(2)}
-                </span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">F1</span>
-                <span className="stat-value">{f1 === undefined ? "—" : f1.toFixed(2)}</span>
-              </div>
-            </div>
+            )}
           </section>
 
-          <section className="panel dataset">
+          <section className="panel dataset-summary">
             <div className="panel-header">
               <div>
-                <h2>Dataset performance</h2>
+                <h2>Dataset overview</h2>
                 <p className="panel-subtitle">Aggregate results across the dataset.</p>
               </div>
               <div className="dataset-meta">
@@ -556,43 +577,60 @@ export default function App() {
               </div>
             </div>
 
-            <div className="stats-bar dataset-stats">
-              <div className="stat-item">
-                <span className="stat-label">Expert boxes</span>
+            <div className="stats-compact">
+              <div className="stat-chip">
+                <span className="stat-label">Expert</span>
                 <span className="stat-value">{datasetExpertCount}</span>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">Model boxes</span>
+              <div className="stat-chip">
+                <span className="stat-label">Model</span>
                 <span className="stat-value">{datasetModelCount}</span>
               </div>
-              <div className="stat-item">
+              <div className="stat-chip">
                 <span className="stat-label">TP</span>
                 <span className="stat-value">{datasetTpCount}</span>
               </div>
-              <div className="stat-item">
+              <div className="stat-chip">
                 <span className="stat-label">FP</span>
                 <span className="stat-value">{datasetFpCount}</span>
               </div>
-              <div className="stat-item">
+              <div className="stat-chip">
                 <span className="stat-label">FN</span>
                 <span className="stat-value">{datasetFnCount}</span>
               </div>
-              <div className="stat-item">
+              <div className="stat-chip">
                 <span className="stat-label">Precision</span>
                 <span className="stat-value">
                   {datasetPrecision === undefined ? "—" : datasetPrecision.toFixed(2)}
                 </span>
               </div>
-              <div className="stat-item">
+              <div className="stat-chip">
                 <span className="stat-label">Recall</span>
                 <span className="stat-value">
                   {datasetRecall === undefined ? "—" : datasetRecall.toFixed(2)}
                 </span>
               </div>
-              <div className="stat-item">
+              <div className="stat-chip">
                 <span className="stat-label">F1</span>
-                <span className="stat-value">{datasetF1 === undefined ? "—" : datasetF1.toFixed(2)}</span>
+                <span className="stat-value">
+                  {datasetF1 === undefined ? "—" : datasetF1.toFixed(2)}
+                </span>
               </div>
+            </div>
+            {datasetInfo.state === "error" && (
+              <div className="panel-alert">{datasetInfo.message}</div>
+            )}
+          </section>
+
+          <section className="panel dataset-table">
+            <div className="panel-header">
+              <div>
+                <h2>Dataset images</h2>
+                <p className="panel-subtitle">
+                  Preview images on hover and select a row to load it in the viewer.
+                </p>
+              </div>
+              <span className="table-note">Hover preview delay: 0.3s</span>
             </div>
 
             <div className="image-table-wrap">
@@ -647,14 +685,10 @@ export default function App() {
                               handleSelectImage(item.id);
                             }
                           }}
-                          onMouseEnter={() => setHoveredImageId(item.id)}
-                          onMouseLeave={() =>
-                            setHoveredImageId((prev) => (prev === item.id ? "" : prev))
-                          }
-                          onFocus={() => setHoveredImageId(item.id)}
-                          onBlur={() =>
-                            setHoveredImageId((prev) => (prev === item.id ? "" : prev))
-                          }
+                          onMouseEnter={() => handleHoverStart(item.id)}
+                          onMouseLeave={() => handleHoverEnd(item.id)}
+                          onFocus={() => handleHoverFocus(item.id)}
+                          onBlur={() => handleHoverEnd(item.id)}
                         >
                           <td className="cell-status" data-state={statusState}>
                             <span className="status-pill">{statusLabel}</span>
