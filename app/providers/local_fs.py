@@ -36,6 +36,22 @@ class LocalFSImageProvider(IImageProvider):
     def get_image(self, image_id: str) -> bytes:
         return self.get_image_path(image_id).read_bytes()
 
+    def list_image_ids(self) -> List[str]:
+        if not self.images_path.exists():
+            raise ImageNotFoundError(f"Images directory not found: {self.images_path}")
+
+        image_ids: List[str] = []
+        seen: set[str] = set()
+        for image_path in sorted(self.images_path.iterdir()):
+            if not image_path.is_file():
+                continue
+            image_id = image_path.stem
+            if image_id in seen:
+                continue
+            seen.add(image_id)
+            image_ids.append(image_id)
+        return image_ids
+
 
 class LocalFSAnnotationProvider(IAnnotationProvider):
     """Load YOLO annotations from local filesystem"""

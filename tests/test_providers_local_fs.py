@@ -23,6 +23,17 @@ def test_local_fs_image_provider_missing_image(tmp_path):
     with pytest.raises(ImageNotFoundError):
         provider.get_image("MISSING")
 
+# TODO: check
+def test_local_fs_image_provider_lists_images(tmp_path):
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    (images_dir / "IMG-002.jpg").write_bytes(b"image-2")
+    (images_dir / "IMG-001.png").write_bytes(b"image-1")
+    (images_dir / "IMG-001.bmp").write_bytes(b"dup")
+
+    provider = LocalFSImageProvider(data_path=tmp_path)
+    assert provider.list_image_ids() == ["IMG-001", "IMG-002"]
+
 
 def test_local_fs_annotation_provider_reads_boxes(tmp_path):
     labels_dir = tmp_path / "labels"

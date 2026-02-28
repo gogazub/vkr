@@ -11,6 +11,11 @@ class IImageProvider(ABC):
         """Return raw image bytes by image id"""
         raise NotImplementedError
 
+    @abstractmethod
+    def list_image_ids(self) -> List[str]:
+        """Return list of available image ids"""
+        raise NotImplementedError
+
 
 class IAnnotationProvider(ABC):
     """Interface for annotation data access"""

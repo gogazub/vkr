@@ -103,6 +103,21 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return FileResponse(image_path)
 
+    @app.get("/api/v1/images", tags=["Images"])
+    async def list_images():
+        """Return list of available images"""
+        try:
+            image_ids = image_provider.list_image_ids()
+        except ImageNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {
+            "count": len(image_ids),
+            "items": [
+                {"id": image_id, "image_url": f"/api/v1/images/{image_id}/file"}
+                for image_id in image_ids
+            ],
+        }
+
     @app.get("/api/v1/images/{image_id}/annotations", tags=["Images"])
     async def get_image_annotations(image_id: str):
         """Return annotations for image id"""
@@ -136,6 +151,28 @@ def create_app() -> FastAPI:
             "image_url": f"/api/v1/images/{image_id}/file",
             "boxes": boxes,
         }
+
+    @app.get("/api/v1/analysis/dataset", tags=["Analysis"])
+    async def analyze_dataset(
+        iou_threshold: float = 0.5,
+        class_aware: bool = True,
+    ):
+        """Return aggregated stats for full dataset"""
+        try:
+            result = model_worker.analyze_dataset(
+                iou_threshold=iou_threshold,
+                class_aware=class_aware,
+            )
+        except ImageNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except AnnotationNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except InvalidFormatError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception:
+            logger.exception("Dataset analysis failed")
+            raise HTTPException(status_code=500, detail="Dataset analysis failed")
+        return result
 
     @app.get("/api/v1/analysis/{image_id}", tags=["Analysis"])
     async def analyze_image(

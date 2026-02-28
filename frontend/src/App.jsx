@@ -30,6 +30,19 @@ export default function App() {
     stats: null,
     message: ""
   });
+  const [datasetInfo, setDatasetInfo] = useState({
+    state: "loading",
+    imageCount: 0,
+    processedCount: 0,
+    stats: null,
+    message: ""
+  });
+  const [imageList, setImageList] = useState({
+    state: "loading",
+    items: [],
+    message: ""
+  });
+  const [hoveredImageId, setHoveredImageId] = useState("");
   const [imageRect, setImageRect] = useState({
     width: 0,
     height: 0,
@@ -40,6 +53,14 @@ export default function App() {
   const stageRef = useRef(null);
   const imageRef = useRef(null);
   const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+  const resolveImageUrl = useCallback(
+    (imageUrl) => {
+      if (!imageUrl) return "";
+      if (imageUrl.startsWith("http")) return imageUrl;
+      return `${baseUrl}${imageUrl}`;
+    },
+    [baseUrl]
+  );
 
   const checkHealth = useCallback(async () => {
     controllerRef.current?.abort();
@@ -75,6 +96,59 @@ export default function App() {
       clearInterval(intervalId);
     };
   }, [checkHealth]);
+
+  const loadDatasetStats = useCallback(async () => {
+    setDatasetInfo((prev) => (prev.state === "ok" ? prev : { ...prev, state: "loading" }));
+    try {
+      const response = await fetch(`${baseUrl}/api/v1/analysis/dataset`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      setDatasetInfo({
+        state: "ok",
+        imageCount: data.image_count ?? 0,
+        processedCount: data.processed_count ?? 0,
+        stats: data.stats ?? null,
+        message: ""
+      });
+    } catch (error) {
+      setDatasetInfo({
+        state: "error",
+        imageCount: 0,
+        processedCount: 0,
+        stats: null,
+        message: error?.message ?? "Network error"
+      });
+    }
+  }, [baseUrl]);
+
+  const loadImageList = useCallback(async () => {
+    setImageList((prev) => (prev.state === "ok" ? prev : { ...prev, state: "loading" }));
+    try {
+      const response = await fetch(`${baseUrl}/api/v1/images`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      setImageList({
+        state: "ok",
+        items: Array.isArray(data.items) ? data.items : [],
+        message: ""
+      });
+    } catch (error) {
+      setImageList({
+        state: "error",
+        items: [],
+        message: error?.message ?? "Network error"
+      });
+    }
+  }, [baseUrl]);
+
+  useEffect(() => {
+    loadDatasetStats();
+    loadImageList();
+  }, [loadDatasetStats, loadImageList]);
 
   const loadViewer = useCallback(
     async (imageId) => {
@@ -130,11 +204,10 @@ export default function App() {
     loadViewer(activeImageId);
   }, [loadViewer, activeImageId]);
 
-  const resolvedImageUrl = useMemo(() => {
-    if (!viewerData.imageUrl) return "";
-    if (viewerData.imageUrl.startsWith("http")) return viewerData.imageUrl;
-    return `${baseUrl}${viewerData.imageUrl}`;
-  }, [baseUrl, viewerData.imageUrl]);
+  const resolvedImageUrl = useMemo(
+    () => resolveImageUrl(viewerData.imageUrl),
+    [resolveImageUrl, viewerData.imageUrl]
+  );
 
   const displayedImageId = viewerData.imageId || activeImageId;
 
@@ -208,6 +281,20 @@ export default function App() {
   const precision = viewerData.stats?.precision;
   const recall = viewerData.stats?.recall;
   const f1 = viewerData.stats?.f1;
+  const datasetStats = datasetInfo.stats;
+  const datasetPrecision = datasetStats?.precision;
+  const datasetRecall = datasetStats?.recall;
+  const datasetF1 = datasetStats?.f1;
+  const datasetExpertCount = datasetStats?.expert_count ?? "—";
+  const datasetModelCount = datasetStats?.model_count ?? "—";
+  const datasetTpCount = datasetStats?.tp ?? "—";
+  const datasetFpCount = datasetStats?.fp ?? "—";
+  const datasetFnCount = datasetStats?.fn ?? "—";
+
+  const handleSelectImage = useCallback((imageId) => {
+    setActiveImageId(imageId);
+    setImageIdInput(imageId);
+  }, []);
 
   return (
     <div className="app-shell">
@@ -365,6 +452,131 @@ export default function App() {
                 {f1 === undefined ? "—" : f1.toFixed(2)}
               </span>
             </div>
+          </div>
+        </section>
+        <section className="panel dataset">
+          <div className="panel-header">
+            <h2>Dataset overview</h2>
+            <div className="dataset-meta">
+              <span>Images: {datasetInfo.state === "ok" ? datasetInfo.imageCount : "—"}</span>
+              <span>
+                Processed: {datasetInfo.state === "ok" ? datasetInfo.processedCount : "—"}
+              </span>
+              {datasetInfo.state === "error" && (
+                <span className="dataset-error">{datasetInfo.message}</span>
+              )}
+            </div>
+          </div>
+          <div className="stats-bar dataset-stats">
+            <div className="stat-item">
+              <span className="stat-label">Expert boxes</span>
+              <span className="stat-value">{datasetExpertCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Model boxes</span>
+              <span className="stat-value">{datasetModelCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">TP</span>
+              <span className="stat-value">{datasetTpCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">FP</span>
+              <span className="stat-value">{datasetFpCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">FN</span>
+              <span className="stat-value">{datasetFnCount}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Precision</span>
+              <span className="stat-value">
+                {datasetPrecision === undefined ? "—" : datasetPrecision.toFixed(2)}
+              </span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Recall</span>
+              <span className="stat-value">
+                {datasetRecall === undefined ? "—" : datasetRecall.toFixed(2)}
+              </span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">F1</span>
+              <span className="stat-value">
+                {datasetF1 === undefined ? "—" : datasetF1.toFixed(2)}
+              </span>
+            </div>
+          </div>
+          <div className="image-table-wrap">
+            <table className="image-table">
+              <thead>
+                <tr>
+                  <th>Image id</th>
+                  <th>Preview</th>
+                </tr>
+              </thead>
+              <tbody>
+                {imageList.state === "loading" && (
+                  <tr>
+                    <td colSpan={2} className="table-empty">
+                      Loading images...
+                    </td>
+                  </tr>
+                )}
+                {imageList.state === "error" && (
+                  <tr>
+                    <td colSpan={2} className="table-empty">
+                      {imageList.message}
+                    </td>
+                  </tr>
+                )}
+                {imageList.state === "ok" && imageList.items.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="table-empty">
+                      No images found
+                    </td>
+                  </tr>
+                )}
+                {imageList.state === "ok" &&
+                  imageList.items.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="image-row"
+                      data-active={item.id === displayedImageId}
+                      tabIndex={0}
+                      onClick={() => handleSelectImage(item.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handleSelectImage(item.id);
+                        }
+                      }}
+                      onMouseEnter={() => setHoveredImageId(item.id)}
+                      onMouseLeave={() =>
+                        setHoveredImageId((prev) => (prev === item.id ? "" : prev))
+                      }
+                      onFocus={() => setHoveredImageId(item.id)}
+                      onBlur={() =>
+                        setHoveredImageId((prev) => (prev === item.id ? "" : prev))
+                      }
+                    >
+                      <td className="image-id">{item.id}</td>
+                      <td className="image-preview-cell">
+                        {hoveredImageId === item.id ? (
+                          <img
+                            className="image-preview"
+                            src={resolveImageUrl(item.image_url)}
+                            alt={`Preview ${item.id}`}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="preview-hint">Hover to preview</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </div>
         </section>
       </main>
