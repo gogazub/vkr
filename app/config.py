@@ -24,16 +24,17 @@ class Settings(BaseSettings):
     
     # Data paths (for DEV mode)
     # Use ./data for debug images by setting DATA_PATH=./data
-    DATA_PATH: str = "./data/datasets/Packages.v5-augmented-v1.yolov8/train"
+    DATA_PATH: str = "./data/datasets/blood_dataset/train"
     MODELS_PATH: str = "./models"
     IMAGES_DIR: str = "images"
     LABELS_DIR: str = "labels"
-    MODEL_FILE: str = "model.onnx"
+    MODEL_FILE: str = "yolov8n_bccd.onnx"
 
     # Model inference defaults
     MODEL_IMG_SIZE: int = 640
     MODEL_CONF_THRESHOLD: float = 0.25
     MODEL_MAX_DET: int = 100
+    MODEL_LETTERBOX: bool = False
     
     # Security
     SECRET_KEY: str = "dev-secret-key"

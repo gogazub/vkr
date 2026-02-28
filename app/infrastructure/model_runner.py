@@ -65,6 +65,7 @@ class OnnxModelRunner(IModelRunner):
         img_size: int = 640,
         conf_threshold: float = 0.25,
         max_det: int = 100,
+        letterbox: bool = True,
         providers: Sequence[str] | None = None,
     ) -> None:
         if ort is None:
@@ -77,6 +78,7 @@ class OnnxModelRunner(IModelRunner):
         self.img_size = img_size
         self.conf_threshold = conf_threshold
         self.max_det = max_det
+        self.letterbox = letterbox
         self._providers = list(providers) if providers else ["CPUExecutionProvider"]
         logger.info("Loading ONNX model: %s", self.model_path)
         try:
@@ -84,8 +86,35 @@ class OnnxModelRunner(IModelRunner):
         except Exception:
             logger.exception("Failed to load ONNX model: %s", self.model_path)
             raise
-        self._input_name = self._session.get_inputs()[0].name
+        input_meta = self._session.get_inputs()[0]
+        self._input_name = input_meta.name
+        self._sync_img_size_from_model(input_meta.shape)
         logger.info("ONNX model loaded. input=%s providers=%s", self._input_name, self._providers)
+
+    def _sync_img_size_from_model(self, input_shape: Sequence[Any]) -> None:
+        if not input_shape or len(input_shape) < 4:
+            logger.warning("Model input shape is unexpected: %s", input_shape)
+            return
+        height = input_shape[-2]
+        width = input_shape[-1]
+        if not isinstance(height, int) or not isinstance(width, int):
+            logger.warning("Model input shape is dynamic; using configured img_size=%s", self.img_size)
+            return
+        if height != width:
+            logger.warning(
+                "Model expects non-square input (h=%s w=%s); using configured img_size=%s",
+                height,
+                width,
+                self.img_size,
+            )
+            return
+        if height != self.img_size:
+            logger.warning(
+                "Model input size overrides configured img_size: %s -> %s",
+                self.img_size,
+                height,
+            )
+            self.img_size = height
 
     def predict(self, image_bytes: bytes) -> List[Dict[str, Any]]:
         image = Image.open(BytesIO(image_bytes)).convert("RGB")
@@ -93,7 +122,14 @@ class OnnxModelRunner(IModelRunner):
         if orig_width == 0 or orig_height == 0:
             raise InvalidFormatError("Invalid image size")
 
-        input_img, scale, pad = self._letterbox(np.array(image), self.img_size)
+        if self.letterbox:
+            input_img, scale, pad = self._letterbox(np.array(image), self.img_size)
+        else:
+            input_img = np.array(
+                image.resize((self.img_size, self.img_size), Image.BILINEAR)
+            )
+            scale = (self.img_size / orig_width, self.img_size / orig_height)
+            pad = (0.0, 0.0)
         blob = input_img.astype(np.float32) / 255.0
         blob = np.transpose(blob, (2, 0, 1))[None, ...]
 
@@ -132,7 +168,7 @@ class OnnxModelRunner(IModelRunner):
         outputs: Sequence[np.ndarray],
         orig_width: int,
         orig_height: int,
-        scale: float,
+        scale: float | tuple[float, float],
         pad: tuple[float, float],
         input_size: int,
     ) -> List[Dict[str, Any]]:
@@ -204,6 +240,9 @@ class OnnxModelRunner(IModelRunner):
             if arr.shape[1] in (6, 7):
                 return arr
             if arr.shape[0] in (6, 7) and arr.shape[1] > arr.shape[0]:
+                # Avoid misclassifying raw outputs shaped like (features, candidates).
+                if arr.shape[1] > 1000:
+                    continue
                 return arr.T
         return None
 
@@ -219,6 +258,11 @@ class OnnxModelRunner(IModelRunner):
         xyxy: bool,
     ) -> List[Dict[str, Any]]:
         pad_x, pad_y = pad
+        if isinstance(scale, tuple):
+            scale_x, scale_y = scale
+        else:
+            scale_x = scale
+            scale_y = scale
         results: List[Dict[str, Any]] = []
         for det in detections:
             if det.shape[0] < 6:
@@ -245,10 +289,10 @@ class OnnxModelRunner(IModelRunner):
                 x2 = x_center + width / 2
                 y2 = y_center + height / 2
 
-            x1 = (x1 - pad_x) / scale
-            y1 = (y1 - pad_y) / scale
-            x2 = (x2 - pad_x) / scale
-            y2 = (y2 - pad_y) / scale
+            x1 = (x1 - pad_x) / scale_x
+            y1 = (y1 - pad_y) / scale_y
+            x2 = (x2 - pad_x) / scale_x
+            y2 = (y2 - pad_y) / scale_y
 
             x1 = float(np.clip(x1, 0, orig_width))
             y1 = float(np.clip(y1, 0, orig_height))

@@ -8,8 +8,9 @@ services:
       - ENV_MODE=${ENV_MODE:-DEV}
       - DEBUG=${DEBUG:-True}
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5431/validation_db
-      - DATA_PATH=${DATA_PATH:-/app/data/datasets/Packages.v5-augmented-v1.yolov8/train}
+      - DATA_PATH=${DATA_PATH:-/app/data/datasets/blood_dataset/train}
       - MODELS_PATH=${MODELS_PATH:-/app/models}
+      - MODEL_LETTERBOX=${MODEL_LETTERBOX:-False}
       - HOST=${HOST:-0.0.0.0}
       - PORT=${PORT:-8000}
     ports:

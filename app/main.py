@@ -61,6 +61,7 @@ def create_app() -> FastAPI:
             img_size=settings.MODEL_IMG_SIZE,
             conf_threshold=settings.MODEL_CONF_THRESHOLD,
             max_det=settings.MODEL_MAX_DET,
+            letterbox=settings.MODEL_LETTERBOX,
         )
         logger.info("Using ONNX model: %s", model_path)
     except ModelNotFoundError:
