@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/validation_db"
     
     # Data paths (for DEV mode)
-    DATA_PATH: str = "./data"
+    # Use ./data for debug images by setting DATA_PATH=./data
+    DATA_PATH: str = "./data/datasets/Packages.v5-augmented-v1.yolov8/train"
     MODELS_PATH: str = "./models"
     IMAGES_DIR: str = "images"
     LABELS_DIR: str = "labels"
