@@ -1,14 +1,18 @@
 """FastAPI application entry point"""
 import logging
+from datetime import datetime, timezone
+from io import BytesIO
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from openpyxl import Workbook
 from app.config import settings
 from app.infrastructure.model_runner import OnnxModelRunner, StubModelRunner
 from app.providers.local_fs import LocalFSAnnotationProvider, LocalFSImageProvider
 from app.services.model_worker import ModelWorker
+from app.services.report_export import build_report_table
 from app.utils.exceptions import (
     AnnotationNotFoundError,
     ImageNotFoundError,
@@ -193,6 +197,60 @@ def create_app() -> FastAPI:
             logger.exception("%s Dataset analysis failed", ERROR_PREFIX)
             raise HTTPException(status_code=500, detail="Dataset analysis failed")
         return result
+
+    @app.get("/api/v1/analysis/dataset/export", tags=["Analysis"])
+    async def export_dataset_report(
+        iou_threshold: float = 0.5,
+        class_aware: bool = True,
+    ):
+        """Export per-image stats as Excel report"""
+        logger.info(
+            "Dataset export request: iou_threshold=%.2f class_aware=%s",
+            iou_threshold,
+            class_aware,
+        )
+        try:
+            image_ids = image_provider.list_image_ids()
+            rows = [
+                model_worker.analyze(
+                    image_id,
+                    iou_threshold=iou_threshold,
+                    class_aware=class_aware,
+                    allow_missing_annotations=True,
+                )
+                for image_id in image_ids
+            ]
+        except ImageNotFoundError as exc:
+            logger.warning("%s Images directory not found during export", ERROR_PREFIX)
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except AnnotationNotFoundError as exc:
+            logger.warning("%s Annotation missing during export", ERROR_PREFIX)
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except InvalidFormatError as exc:
+            logger.warning("%s Invalid annotation format during export", ERROR_PREFIX)
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception:
+            logger.exception("%s Dataset export failed", ERROR_PREFIX)
+            raise HTTPException(status_code=500, detail="Dataset export failed")
+
+        headers, data = build_report_table(rows)
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Dataset report"
+        sheet.append(headers)
+        for row in data:
+            sheet.append(row)
+
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        filename = f"dataset_report_{timestamp}.xlsx"
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
 
     @app.get("/api/v1/analysis/{image_id}", tags=["Analysis"])
     async def analyze_image(

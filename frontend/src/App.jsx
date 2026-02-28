@@ -44,6 +44,7 @@ export default function App() {
     message: ""
   });
   const [showImageStats, setShowImageStats] = useState(true);
+  const [exportState, setExportState] = useState("idle");
   const [hoveredImageId, setHoveredImageId] = useState("");
   const [imageRect, setImageRect] = useState({
     width: 0,
@@ -317,6 +318,32 @@ export default function App() {
     setImageIdInput(imageId);
   }, []);
 
+  const handleExportDataset = useCallback(async () => {
+    if (exportState === "loading") return;
+    setExportState("loading");
+    try {
+      const response = await fetch(`${baseUrl}/api/v1/analysis/dataset/export`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      link.href = url;
+      link.download = `dataset_report_${timestamp}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setExportState("idle");
+    } catch (error) {
+      console.error("Export failed", error);
+      setExportState("error");
+      setTimeout(() => setExportState("idle"), 2000);
+    }
+  }, [baseUrl, exportState]);
+
   const handleHoverStart = useCallback((imageId) => {
     if (hoverTimeoutRef.current?.timerId) {
       clearTimeout(hoverTimeoutRef.current.timerId);
@@ -576,11 +603,21 @@ export default function App() {
                 <h2>Dataset overview</h2>
                 <p className="panel-subtitle">Aggregate results across the dataset.</p>
               </div>
-              <div className="dataset-meta">
-                <span>Images: {datasetInfo.state === "ok" ? datasetInfo.imageCount : "—"}</span>
-                <span>
-                  Processed: {datasetInfo.state === "ok" ? datasetInfo.processedCount : "—"}
-                </span>
+              <div className="dataset-actions">
+                <div className="dataset-meta">
+                  <span>Images: {datasetInfo.state === "ok" ? datasetInfo.imageCount : "—"}</span>
+                  <span>
+                    Processed: {datasetInfo.state === "ok" ? datasetInfo.processedCount : "—"}
+                  </span>
+                </div>
+                <button
+                  className="export-button"
+                  type="button"
+                  onClick={handleExportDataset}
+                  disabled={exportState === "loading"}
+                >
+                  {exportState === "loading" ? "Exporting..." : "Export Excel"}
+                </button>
               </div>
             </div>
 
