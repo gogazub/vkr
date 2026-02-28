@@ -37,3 +37,19 @@ def test_model_worker_returns_combined_payload(tmp_path):
     assert result["stats"]["expert_count"] == 1
     assert result["stats"]["model_count"] == 1
     assert "tp" in result["stats"]
+
+
+def test_model_worker_allows_missing_annotations(tmp_path):
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    (images_dir / "IMG-404.png").write_bytes(b"fake-image")
+
+    image_provider = LocalFSImageProvider(data_path=tmp_path)
+    annotation_provider = LocalFSAnnotationProvider(data_path=tmp_path)
+    model_runner = StubModelRunner(boxes=[])
+
+    worker = ModelWorker(image_provider, annotation_provider, model_runner)
+    result = worker.analyze("IMG-404", allow_missing_annotations=True)
+
+    assert result["image_id"] == "IMG-404"
+    assert result["expert_boxes"] == []

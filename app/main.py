@@ -183,7 +183,10 @@ def create_app() -> FastAPI:
         """Return combined payload (image + expert + model + stats)"""
         try:
             result = model_worker.analyze(
-                image_id, iou_threshold=iou_threshold, class_aware=class_aware
+                image_id,
+                iou_threshold=iou_threshold,
+                class_aware=class_aware,
+                allow_missing_annotations=True,
             )
         except ImageNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

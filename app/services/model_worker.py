@@ -5,6 +5,7 @@ from app.core.matcher import match_boxes
 from app.core.metrics import build_stats, build_stats_from_counts
 from app.infrastructure.model_runner import IModelRunner
 from app.providers.interfaces import IAnnotationProvider, IImageProvider
+from app.utils.exceptions import AnnotationNotFoundError
 
 
 class ModelWorker:
@@ -26,9 +27,15 @@ class ModelWorker:
         *,
         iou_threshold: float = 0.5,
         class_aware: bool = True,
+        allow_missing_annotations: bool = False,
     ) -> Dict[str, Any]:
         image_bytes = self._image_provider.get_image(image_id)
-        expert_boxes = self._annotation_provider.get_annotations(image_id)
+        try:
+            expert_boxes = self._annotation_provider.get_annotations(image_id)
+        except AnnotationNotFoundError:
+            if not allow_missing_annotations:
+                raise
+            expert_boxes = []
         model_boxes = self._model_runner.predict(image_bytes)
 
         match_result = match_boxes(

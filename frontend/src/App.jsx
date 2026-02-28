@@ -30,6 +30,7 @@ export default function App() {
     stats: null,
     message: ""
   });
+  const [imageLoadError, setImageLoadError] = useState(false);
   const [datasetInfo, setDatasetInfo] = useState({
     state: "loading",
     imageCount: 0,
@@ -204,12 +205,17 @@ export default function App() {
     loadViewer(activeImageId);
   }, [loadViewer, activeImageId]);
 
-  const resolvedImageUrl = useMemo(
-    () => resolveImageUrl(viewerData.imageUrl),
-    [resolveImageUrl, viewerData.imageUrl]
-  );
-
   const displayedImageId = viewerData.imageId || activeImageId;
+  const fallbackImageUrl = useMemo(() => {
+    if (!displayedImageId) return "";
+    return `${baseUrl}/api/v1/images/${encodeURIComponent(displayedImageId)}/file`;
+  }, [baseUrl, displayedImageId]);
+  const resolvedImageUrl = useMemo(() => {
+    if (viewerData.imageUrl) {
+      return resolveImageUrl(viewerData.imageUrl);
+    }
+    return fallbackImageUrl;
+  }, [resolveImageUrl, viewerData.imageUrl, fallbackImageUrl]);
 
   const expertBoxes = useMemo(
     () => toOverlayBoxes(viewerData.expertBoxes, "expert"),
@@ -262,6 +268,10 @@ export default function App() {
     window.addEventListener("resize", updateImageRect);
     return () => window.removeEventListener("resize", updateImageRect);
   }, [updateImageRect, resolvedImageUrl]);
+
+  useEffect(() => {
+    setImageLoadError(false);
+  }, [resolvedImageUrl]);
 
   const overlayStyle = useMemo(() => {
     if (!imageRect.width || !imageRect.height) return null;
@@ -363,23 +373,24 @@ export default function App() {
           </div>
           <div className="viewer-stage">
             <div className="stage-image" ref={stageRef}>
-              {viewerData.state === "ok" && resolvedImageUrl ? (
+              {resolvedImageUrl && !imageLoadError ? (
                 <img
                   className="stage-img"
                   src={resolvedImageUrl}
                   alt={`Image ${displayedImageId}`}
                   ref={imageRef}
                   onLoad={updateImageRect}
+                  onError={() => setImageLoadError(true)}
                 />
               ) : (
                 <div className="stage-placeholder">
                   {viewerData.state === "loading"
                     ? "Loading image..."
-                    : `Image unavailable: ${viewerData.message}`}
+                    : `Image unavailable: ${viewerData.message || "Not found"}`}
                 </div>
               )}
               <div className="stage-label">{displayedImageId}</div>
-              {overlayStyle && showModel && (
+              {overlayStyle && showModel && !imageLoadError && (
                 <div className="overlay model" style={overlayStyle}>
                   {modelBoxes.map((box) => (
                     <span
@@ -395,7 +406,7 @@ export default function App() {
                   ))}
                 </div>
               )}
-              {overlayStyle && showExpert && (
+              {overlayStyle && showExpert && !imageLoadError && (
                 <div className="overlay expert" style={overlayStyle}>
                   {expertBoxes.map((box) => (
                     <span
