@@ -17,6 +17,7 @@ from app.utils.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+ERROR_PREFIX = "ERR"
 
 
 def configure_logging() -> None:
@@ -98,8 +99,10 @@ def create_app() -> FastAPI:
         try:
             image_path = image_provider.get_image_path(image_id)
         except ImageNotFoundError as exc:
+            logger.warning("%s Image not found: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except InvalidFormatError as exc:
+            logger.warning("%s Invalid image id: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return FileResponse(image_path)
 
@@ -109,7 +112,9 @@ def create_app() -> FastAPI:
         try:
             image_ids = image_provider.list_image_ids()
         except ImageNotFoundError as exc:
+            logger.warning("%s Images directory not found", ERROR_PREFIX)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        logger.info("List images: count=%d", len(image_ids))
         return {
             "count": len(image_ids),
             "items": [
@@ -124,8 +129,10 @@ def create_app() -> FastAPI:
         try:
             boxes = annotation_provider.get_annotations(image_id)
         except AnnotationNotFoundError as exc:
+            logger.warning("%s Annotation not found: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except InvalidFormatError as exc:
+            logger.warning("%s Invalid annotation format: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {"image_id": image_id, "boxes": boxes}
 
@@ -135,15 +142,19 @@ def create_app() -> FastAPI:
         try:
             image_provider.get_image_path(image_id)
         except ImageNotFoundError as exc:
+            logger.warning("%s Image not found: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except InvalidFormatError as exc:
+            logger.warning("%s Invalid image id: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         try:
             boxes = annotation_provider.get_annotations(image_id)
         except AnnotationNotFoundError as exc:
+            logger.warning("%s Annotation not found: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except InvalidFormatError as exc:
+            logger.warning("%s Invalid annotation format: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         return {
@@ -158,19 +169,27 @@ def create_app() -> FastAPI:
         class_aware: bool = True,
     ):
         """Return aggregated stats for full dataset"""
+        logger.info(
+            "Dataset analysis request: iou_threshold=%.2f class_aware=%s",
+            iou_threshold,
+            class_aware,
+        )
         try:
             result = model_worker.analyze_dataset(
                 iou_threshold=iou_threshold,
                 class_aware=class_aware,
             )
         except ImageNotFoundError as exc:
+            logger.warning("%s Images directory not found during dataset analysis", ERROR_PREFIX)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except AnnotationNotFoundError as exc:
+            logger.warning("%s Annotation missing during dataset analysis", ERROR_PREFIX)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except InvalidFormatError as exc:
+            logger.warning("%s Invalid annotation format during dataset analysis", ERROR_PREFIX)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception:
-            logger.exception("Dataset analysis failed")
+            logger.exception("%s Dataset analysis failed", ERROR_PREFIX)
             raise HTTPException(status_code=500, detail="Dataset analysis failed")
         return result
 
@@ -181,6 +200,12 @@ def create_app() -> FastAPI:
         class_aware: bool = True,
     ):
         """Return combined payload (image + expert + model + stats)"""
+        logger.info(
+            "Image analysis request: image_id=%s iou_threshold=%.2f class_aware=%s",
+            image_id,
+            iou_threshold,
+            class_aware,
+        )
         try:
             result = model_worker.analyze(
                 image_id,
@@ -189,13 +214,16 @@ def create_app() -> FastAPI:
                 allow_missing_annotations=True,
             )
         except ImageNotFoundError as exc:
+            logger.warning("%s Image not found: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except AnnotationNotFoundError as exc:
+            logger.warning("%s Annotation not found: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except InvalidFormatError as exc:
+            logger.warning("%s Invalid format during analysis: image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception:
-            logger.exception("Analysis failed for image_id=%s", image_id)
+            logger.exception("%s Analysis failed for image_id=%s", ERROR_PREFIX, image_id)
             raise HTTPException(status_code=500, detail="Analysis failed")
         return {
             **result,
